@@ -1,6 +1,8 @@
 # Gradle
-gradle/
+.gradle/
 build/
+**/fileHashes.lock
+**/file-system.probe
 
 # Android Studio / IntelliJ
 .idea/
@@ -25,5 +27,5 @@ captures/
 *.log
 
 # OS files
-DS_Store
+.DS_Store
 Thumbs.db
