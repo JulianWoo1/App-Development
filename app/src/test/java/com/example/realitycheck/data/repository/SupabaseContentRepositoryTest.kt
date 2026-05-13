@@ -2,6 +2,8 @@ package com.example.realitycheck.data.repository
 
 import com.example.realitycheck.data.model.ContentItem
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -28,7 +30,7 @@ class SupabaseContentRepositoryTest {
             createDummyItems(10) // Returns 10 items
         }
 
-        val repository = SupabaseContentRepository(fetchBatch = mockFetch, threshold = 4, randomize = false)
+        val repository = SupabaseContentRepository(fetchBatch = mockFetch, threshold = 4, randomize = false, scope = backgroundScope)
         
         // Initial call should trigger fetch and return first 2
         val result1 = repository.getNextPair()
@@ -51,13 +53,17 @@ class SupabaseContentRepositoryTest {
             createDummyItems(6) // Returns 6 items. Threshold is 4.
         }
 
-        val repository = SupabaseContentRepository(fetchBatch = mockFetch, threshold = 4, randomize = false)
+        // Use UnconfinedTestDispatcher so the background launch executes eagerly for our test
+        val testScope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
+        val repository = SupabaseContentRepository(fetchBatch = mockFetch, threshold = 4, randomize = false, scope = testScope)
         
-        repository.getNextPair() // Buffer has 4 left. fetchCount = 1
-        assertEquals(1, fetchCount)
+        // First call drops buffer from 0 to 6, then pops 2 -> buffer is 4.
+        // 4 <= threshold(4), so it immediately launches background fetch.
+        // Because of UnconfinedTestDispatcher, the background fetch runs immediately!
+        repository.getNextPair() 
         
-        repository.getNextPair() // Buffer has 2 left, drops below threshold (4), should trigger fetch
-        // Coroutines in test will run the async fetch
+        // We expect fetchCount to be 2: 
+        // 1 for the initial synchronous fetch, 1 for the background fetch just triggered.
         assertEquals(2, fetchCount)
     }
 }
