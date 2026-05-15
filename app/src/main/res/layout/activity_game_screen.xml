@@ -3,27 +3,68 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="#121212">
 
-    <androidx.fragment.app.FragmentContainerView
-        android:id="@+id/nav_host_fragment_activity_game_screen"
-        android:name="androidx.navigation.fragment.NavHostFragment"
+    <!-- Top image -->
+    <ImageView
+        android:id="@+id/imageTop"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        app:navGraph="@navigation/mobile_navigation2"
-        app:defaultNavHost="true"
+        android:scaleType="centerCrop"
+        android:contentDescription="Bovenste afbeelding"
+        android:background="#1E1E1E"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/nav_view"
+        app:layout_constraintBottom_toTopOf="@id/divider"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="4dp"/>
+
+    <!-- Overlay top -->
+    <View
+        android:id="@+id/overlayTop"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="@id/imageTop"
+        app:layout_constraintBottom_toBottomOf="@id/imageTop"
+        app:layout_constraintStart_toStartOf="@id/imageTop"
+        app:layout_constraintEnd_toEndOf="@id/imageTop"/>
+
+    <!-- Divider -->
+    <View
+        android:id="@+id/divider"
+        android:layout_width="0dp"
+        android:layout_height="2dp"
+        android:background="#333333"
+        app:layout_constraintTop_toBottomOf="@id/imageTop"
+        app:layout_constraintBottom_toTopOf="@id/imageBottom"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <com.google.android.material.bottomnavigation.BottomNavigationView
-        android:id="@+id/nav_view"
+    <!-- Bottom image -->
+    <ImageView
+        android:id="@+id/imageBottom"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        app:menu="@menu/bottom_nav_menu"
+        android:layout_height="0dp"
+        android:scaleType="centerCrop"
+        android:contentDescription="Onderste afbeelding"
+        android:background="#1E1E1E"
+        app:layout_constraintTop_toBottomOf="@id/divider"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="4dp"/>
+
+    <!-- Overlay bottom -->
+    <View
+        android:id="@+id/overlayBottom"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="@id/imageBottom"
+        app:layout_constraintBottom_toBottomOf="@id/imageBottom"
+        app:layout_constraintStart_toStartOf="@id/imageBottom"
+        app:layout_constraintEnd_toEndOf="@id/imageBottom"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
