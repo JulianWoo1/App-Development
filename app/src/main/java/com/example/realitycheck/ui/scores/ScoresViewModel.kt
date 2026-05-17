@@ -1,13 +1,13 @@
-package com.example.realitycheck.ui.notifications
+package com.example.realitycheck.ui.scores
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 
-class NotificationsViewModel : ViewModel() {
+class ScoresViewModel : ViewModel() {
 
     private val _text = MutableLiveData<String>().apply {
-        value = "This is notifications Fragment"
+        value = "This is scores Fragment"
     }
     val text: LiveData<String> = _text
 }

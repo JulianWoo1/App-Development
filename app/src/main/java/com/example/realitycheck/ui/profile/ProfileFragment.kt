@@ -1,4 +1,4 @@
-package com.example.realitycheck.ui.home
+package com.example.realitycheck.ui.profile
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -7,7 +7,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import com.example.realitycheck.R
 
-class HomeFragment : Fragment()
+class ProfileFragment : Fragment()
 {
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -15,6 +15,6 @@ class HomeFragment : Fragment()
         savedInstanceState: Bundle?
     ): View?
     {
-        return inflater.inflate(R.layout.fragment_home, container, false)
+        return inflater.inflate(R.layout.fragment_profile, container, false)
     }
 }

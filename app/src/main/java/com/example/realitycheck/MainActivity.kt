@@ -1,45 +1,57 @@
 package com.example.realitycheck
 
-import android.content.Intent
 import android.os.Bundle
-import android.view.Menu
-import android.view.MenuItem
-import androidx.activity.result.contract.ActivityResultContracts
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.navigation.fragment.NavHostFragment
+import androidx.navigation.ui.setupWithNavController
 import com.example.realitycheck.databinding.ActivityMainBinding
 
-class MainActivity : AppCompatActivity() {
-
+class MainActivity : AppCompatActivity()
+{
     private lateinit var binding: ActivityMainBinding
-    private var lastStreak = 0
 
-    private val gameLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == RESULT_OK) {
-            lastStreak = result.data?.getIntExtra("FINAL_STREAK", 0) ?: 0
-            invalidateOptionsMenu()
-        }
-    }
-
-    override fun onCreate(savedInstanceState: Bundle?) {
+    override fun onCreate(savedInstanceState: Bundle?)
+    {
         super.onCreate(savedInstanceState)
+
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.startButton.setOnClickListener {
-            gameLauncher.launch(Intent(this, GameScreen::class.java))
+        val navHostFragment =
+            supportFragmentManager.findFragmentById(
+                R.id.nav_host_fragment_activity_main
+            ) as NavHostFragment
+
+        val navController = navHostFragment.navController
+
+        binding.bottomNav.setupWithNavController(navController)
+
+        setBottomNavVisible(false)
+
+        navController.addOnDestinationChangedListener { _, destination, _ ->
+
+            when (destination.id)
+            {
+                R.id.navigation_home,
+                R.id.navigation_scores,
+                R.id.navigation_badges,
+                R.id.navigation_profile ->
+                {
+                    setBottomNavVisible(true)
+                }
+
+                else ->
+                {
+                    setBottomNavVisible(false)
+                }
+            }
         }
     }
 
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.menu_main, menu)
-        return true
-    }
-
-    override fun onPrepareOptionsMenu(menu: Menu): Boolean {
-        menu.findItem(R.id.action_streak)?.title =
-            if (lastStreak == 0) "  0" else "$lastStreak"
-        return super.onPrepareOptionsMenu(menu)
+    private fun setBottomNavVisible(visible: Boolean)
+    {
+        binding.bottomNav.visibility =
+            if (visible) View.VISIBLE else View.GONE
     }
 }
