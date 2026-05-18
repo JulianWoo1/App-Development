@@ -19,7 +19,7 @@ class FakeAuthRepository : AuthRepository {
     }
 
     override suspend fun signOut(): Result<Unit> {
-        currentUserId = null
+        storedUserId = null
         return Result.success(Unit)
     }
 
@@ -27,5 +27,5 @@ class FakeAuthRepository : AuthRepository {
         return Result.success(Unit)
     }
 
-    override fun getCurrentUserId(): String? = currentUserId
+    override fun getCurrentUserId(): String? = storedUserId
 }
