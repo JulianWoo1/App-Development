@@ -11,13 +11,10 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.realitycheck.MainActivity
 import com.example.realitycheck.data.di.SupabaseModule
 import com.example.realitycheck.ui.components.AuthButton
@@ -41,9 +38,8 @@ fun LoginScreen(onNavigateToRegister: () -> Unit) {
         Spacer(modifier = Modifier.height(48.dp))
         Text(
             text = "Login",
-            color = Color.White,
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold
+            color = MaterialTheme.colorScheme.onBackground,
+            style = MaterialTheme.typography.headlineLarge
         )
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -65,7 +61,8 @@ fun LoginScreen(onNavigateToRegister: () -> Unit) {
 
         Text(
             text = "Forgot Password?",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
+            style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier
                 .align(Alignment.End)
                 .padding(vertical = 12.dp)
@@ -105,19 +102,20 @@ fun LoginScreen(onNavigateToRegister: () -> Unit) {
 
         Text(
             text = "Don't have an account? Register",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
+            style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.clickable { onNavigateToRegister() }
         )
 
         Spacer(modifier = Modifier.weight(1f))
 
-        HorizontalDivider(color = Color.DarkGray, thickness = 1.dp)
+        HorizontalDivider(color = MaterialTheme.colorScheme.surface, thickness = 1.dp)
 
         TextButton(
             onClick = { navigateToMain(context) },
             modifier = Modifier.padding(top = 16.dp)
         ) {
-            Text("Skip (Dev Mode)", color = Color.Gray)
+            Text("Skip (Dev Mode)", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
         }
     }
 }

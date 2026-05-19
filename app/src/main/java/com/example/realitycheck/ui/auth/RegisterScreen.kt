@@ -10,13 +10,10 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.realitycheck.data.di.SupabaseModule
 import com.example.realitycheck.ui.components.AuthButton
 import com.example.realitycheck.ui.components.AuthTextField
@@ -40,9 +37,8 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit) {
         Spacer(modifier = Modifier.height(48.dp))
         Text(
             text = "Register",
-            color = Color.White,
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold
+            color = MaterialTheme.colorScheme.onBackground,
+            style = MaterialTheme.typography.headlineLarge
         )
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -105,7 +101,8 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit) {
 
         Text(
             text = "Already have an account? Login",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
+            style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.clickable { onNavigateToLogin() }
         )
     }
