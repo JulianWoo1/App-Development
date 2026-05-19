@@ -77,6 +77,12 @@
         android:label="Profiel"
         tools:layout="@layout/fragment_profile" />
 
+    <fragment
+        android:id="@+id/noInternetFragment"
+        android:name="com.example.realitycheck.ui.nointernet.NoInternetFragment"
+        android:label="Geen internet"
+        tools:layout="@layout/fragment_no_internet"/>
+
     <action
         android:id="@+id/action_global_home"
         app:destination="@id/navigation_home"

@@ -6,10 +6,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import com.example.realitycheck.databinding.ActivityMainBinding
+import com.example.realitycheck.utils.NetworkMonitor
 
 class MainActivity : AppCompatActivity()
 {
     private lateinit var binding: ActivityMainBinding
+    private lateinit var networkMonitor: NetworkMonitor
 
     override fun onCreate(savedInstanceState: Bundle?)
     {
@@ -24,6 +26,36 @@ class MainActivity : AppCompatActivity()
             ) as NavHostFragment
 
         val navController = navHostFragment.navController
+
+        networkMonitor = NetworkMonitor(this)
+        {
+            isConnected ->
+
+            runOnUiThread {
+
+                val currentDestination =
+                    navController.currentDestination?.id
+
+                if (!isConnected)
+                {
+                    if (currentDestination != R.id.noInternetFragment)
+                    {
+                        navController.navigate(
+                            R.id.noInternetFragment
+                        )
+                    }
+                }
+                else
+                {
+                    if (currentDestination == R.id.noInternetFragment)
+                    {
+                        navController.popBackStack()
+                    }
+                }
+            }
+        }
+
+        networkMonitor.startMonitoring()
 
         binding.bottomNav.setupWithNavController(navController)
 
@@ -53,5 +85,12 @@ class MainActivity : AppCompatActivity()
     {
         binding.bottomNav.visibility =
             if (visible) View.VISIBLE else View.GONE
+    }
+
+    override fun onDestroy()
+    {
+        super.onDestroy()
+
+        networkMonitor.stopMonitoring()
     }
 }
