@@ -27,6 +27,14 @@ class GameActivity : AppCompatActivity() {
     private var bestStreak = 0
     private var inputEnabled = true
 
+    private var roundType = RoundType.ONE_REAL
+
+    enum class RoundType {
+        ONE_REAL,
+        BOTH_AI,
+        BOTH_REAL
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -40,13 +48,25 @@ class GameActivity : AppCompatActivity() {
 
         binding.imageTop.setOnClickListener {
             if (inputEnabled) {
-                checkAnswer(isTop = true)
+                checkImageAnswer(isTop = true)
             }
         }
 
         binding.imageBottom.setOnClickListener {
             if (inputEnabled) {
-                checkAnswer(isTop = false)
+                checkImageAnswer(isTop = false)
+            }
+        }
+
+        binding.btnBothAi.setOnClickListener {
+            if (inputEnabled) {
+                checkBothAnswer(guessedAi = true)
+            }
+        }
+
+        binding.btnBothReal.setOnClickListener {
+            if (inputEnabled) {
+                checkBothAnswer(guessedAi = false)
             }
         }
 
@@ -63,7 +83,6 @@ class GameActivity : AppCompatActivity() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-
         return when (item.itemId) {
 
             android.R.id.home -> {
@@ -81,6 +100,7 @@ class GameActivity : AppCompatActivity() {
         outState.putInt(KEY_STREAK, currentStreak)
         outState.putInt(KEY_BEST_STREAK, bestStreak)
         outState.putBoolean(KEY_CORRECT_TOP, isCorrectImageTop)
+        outState.putString(KEY_ROUND_TYPE, roundType.name)
     }
 
     override fun onDestroy() {
@@ -95,25 +115,66 @@ class GameActivity : AppCompatActivity() {
         currentStreak = savedInstanceState.getInt(KEY_STREAK)
         bestStreak = savedInstanceState.getInt(KEY_BEST_STREAK)
         isCorrectImageTop = savedInstanceState.getBoolean(KEY_CORRECT_TOP)
+
+        roundType = RoundType.valueOf(
+            savedInstanceState.getString(
+                KEY_ROUND_TYPE,
+                RoundType.ONE_REAL.name
+            )!!
+        )
     }
 
-    private fun checkAnswer(isTop: Boolean) {
+    private fun checkImageAnswer(isTop: Boolean) {
+
+        val correct = isTop == isCorrectImageTop
+
+        handleResult(
+            correct = correct,
+            tappedTop = isTop
+        )
+    }
+
+    private fun checkBothAnswer(guessedAi: Boolean) {
+
+        val correct = when (roundType) {
+
+            RoundType.BOTH_AI -> guessedAi
+
+            RoundType.BOTH_REAL -> !guessedAi
+
+            RoundType.ONE_REAL -> false
+        }
+
+        handleResult(
+            correct = correct,
+            tappedTop = null
+        )
+    }
+
+    private fun handleResult(
+        correct: Boolean,
+        tappedTop: Boolean?
+    ) {
 
         inputEnabled = false
 
-        val isCorrect = isTop == isCorrectImageTop
+        setButtonsEnabled(false)
 
-        if (isCorrect) {
+        if (correct) {
 
             currentStreak++
             bestStreak = maxOf(bestStreak, currentStreak)
 
-            showOverlay(
-                tappedTop = isTop,
-                correct = true
-            )
-
             updateStreakDisplay()
+
+            if (tappedTop != null) {
+                showOverlay(
+                    tappedTop = tappedTop,
+                    correct = true
+                )
+            } else {
+                showBothOverlays(correct = true)
+            }
 
             runDelayed {
 
@@ -121,15 +182,21 @@ class GameActivity : AppCompatActivity() {
 
                 inputEnabled = true
 
+                setButtonsEnabled(true)
+
                 loadNewRound()
             }
 
         } else {
 
-            showOverlay(
-                tappedTop = isTop,
-                correct = false
-            )
+            if (tappedTop != null) {
+                showOverlay(
+                    tappedTop = tappedTop,
+                    correct = false
+                )
+            } else {
+                showBothOverlays(correct = false)
+            }
 
             runDelayed {
 
@@ -151,25 +218,56 @@ class GameActivity : AppCompatActivity() {
 
         inputEnabled = false
 
-        isCorrectImageTop = Random.nextBoolean()
+        roundType = RoundType.entries.random()
 
-        val randomId = (1..MAX_IMAGE_ID).random()
+        val randomId = (1..MAX_IMAGE_ID - 3).random()
 
-        val realUrl =
+        val realUrl1 =
             "https://picsum.photos/id/$randomId/$IMAGE_SIZE/$IMAGE_SIZE"
 
-        val aiUrl =
+        val realUrl2 =
+            "https://picsum.photos/id/${randomId + 2}/$IMAGE_SIZE/$IMAGE_SIZE"
+
+        val aiUrl1 =
             "https://picsum.photos/id/${randomId + 1}/$IMAGE_SIZE/$IMAGE_SIZE"
 
-        val topUrl =
-            if (isCorrectImageTop) realUrl else aiUrl
+        val aiUrl2 =
+            "https://picsum.photos/id/${randomId + 3}/$IMAGE_SIZE/$IMAGE_SIZE"
 
-        val bottomUrl =
-            if (isCorrectImageTop) aiUrl else realUrl
+        when (roundType) {
 
-        loadImage(topUrl, binding.imageTop)
+            RoundType.ONE_REAL -> {
 
-        loadImage(bottomUrl, binding.imageBottom)
+                isCorrectImageTop = Random.nextBoolean()
+
+                val topUrl =
+                    if (isCorrectImageTop) realUrl1 else aiUrl1
+
+                val bottomUrl =
+                    if (isCorrectImageTop) aiUrl1 else realUrl1
+
+                loadImage(topUrl, binding.imageTop)
+                loadImage(bottomUrl, binding.imageBottom)
+
+                setButtonsEnabled(false)
+            }
+
+            RoundType.BOTH_AI -> {
+
+                loadImage(aiUrl1, binding.imageTop)
+                loadImage(aiUrl2, binding.imageBottom)
+
+                setButtonsEnabled(true)
+            }
+
+            RoundType.BOTH_REAL -> {
+
+                loadImage(realUrl1, binding.imageTop)
+                loadImage(realUrl2, binding.imageBottom)
+
+                setButtonsEnabled(true)
+            }
+        }
 
         inputEnabled = true
     }
@@ -210,6 +308,22 @@ class GameActivity : AppCompatActivity() {
         }
     }
 
+    private fun showBothOverlays(correct: Boolean) {
+
+        val overlayColor =
+            if (correct) {
+                Color.parseColor("#8800FF00")
+            } else {
+                Color.parseColor("#88FF0000")
+            }
+
+        binding.overlayTop.setBackgroundColor(overlayColor)
+        binding.overlayBottom.setBackgroundColor(overlayColor)
+
+        binding.overlayTop.visibility = View.VISIBLE
+        binding.overlayBottom.visibility = View.VISIBLE
+    }
+
     private fun clearOverlays() {
 
         binding.overlayTop.visibility = View.GONE
@@ -220,22 +334,29 @@ class GameActivity : AppCompatActivity() {
         streakMenuItem?.title = currentStreak.toString()
     }
 
+    private fun setButtonsEnabled(enabled: Boolean) {
+
+        binding.btnBothAi.isEnabled = enabled
+        binding.btnBothReal.isEnabled = enabled
+
+        val alpha =
+            if (enabled) 1f else 0.4f
+
+        binding.btnBothAi.alpha = alpha
+        binding.btnBothReal.alpha = alpha
+    }
+
     private fun runDelayed(action: () -> Unit) {
         handler.postDelayed(action, ROUND_DELAY)
     }
 
     companion object {
-
         private const val ROUND_DELAY = 1200L
-
         private const val IMAGE_SIZE = 600
-
         private const val MAX_IMAGE_ID = 1000
-
         private const val KEY_STREAK = "key_streak"
-
         private const val KEY_BEST_STREAK = "key_best_streak"
-
         private const val KEY_CORRECT_TOP = "key_correct_top"
+        private const val KEY_ROUND_TYPE = "key_round_type"
     }
 }

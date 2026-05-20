@@ -15,4 +15,8 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    companion object {
+        const val EXTRA_FINAL_STREAK = "extra_final_streak"
+    }
 }
