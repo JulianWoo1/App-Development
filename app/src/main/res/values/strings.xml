@@ -2,6 +2,8 @@
 
     <string name="app_name">RealityCheck</string>
 
+    <string name="title_home">Home</string>
+
     <string name="start_game">Start Game</string>
 
     <string name="top_image">Top image</string>

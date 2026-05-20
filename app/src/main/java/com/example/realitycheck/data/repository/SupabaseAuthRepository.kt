@@ -40,6 +40,15 @@ class SupabaseAuthRepository(private val supabaseClient: SupabaseClient) : AuthR
         }
     }
 
+    override suspend fun resetPassword(email: String): Result<Unit> {
+        return try {
+            supabaseClient.auth.resetPasswordForEmail(email)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     override fun getCurrentUserId(): String? {
         return supabaseClient.auth.currentSessionOrNull()?.user?.id
     }

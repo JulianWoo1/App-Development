@@ -23,5 +23,9 @@ class FakeAuthRepository : AuthRepository {
         return Result.success(Unit)
     }
 
+    override suspend fun resetPassword(email: String): Result<Unit> {
+        return Result.success(Unit)
+    }
+
     override fun getCurrentUserId(): String? = storedUserId
 }

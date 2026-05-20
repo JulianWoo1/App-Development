@@ -2,7 +2,7 @@ package com.example.realitycheck.data.repository
 
 import com.example.realitycheck.data.model.Profile
 
-class FakeProfileRepository(private val authRepository: FakeAuthRepository) : ProfileRepository {
+class FakeProfileRepository(private val authRepository: FakeAuthRepository = FakeAuthRepository()) : ProfileRepository {
     val profiles = mutableMapOf<String, Profile>()
     var shouldFail = false
 
