@@ -10,23 +10,41 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 
-enum class RoundType { ONE_REAL, BOTH_AI, BOTH_REAL }
+// ---------------- MODE ----------------
+
+enum class GameMode {
+    IMAGE,
+    TEXT
+}
+
+enum class RoundType {
+    ONE_REAL,
+    BOTH_AI,
+    BOTH_REAL
+}
+
+// ---------------- UI STATE ----------------
 
 data class GameUiState(
-    val topImageUrl: String? = null,
-    val bottomImageUrl: String? = null,
+    val mode: GameMode = GameMode.IMAGE,
+
+    val topContent: String? = null,
+    val bottomContent: String? = null,
+
+    val isImageMode: Boolean = true,
+
     val roundType: RoundType = RoundType.ONE_REAL,
-    val isCorrectImageTop: Boolean = true,
+    val isCorrectTop: Boolean = true,
+
     val showOverlay: Boolean = false,
     val lastResultCorrect: Boolean = false,
     val tappedTop: Boolean? = null,
+
     val isGameOver: Boolean = false,
-    val isLoading: Boolean = true,
-    val topImageLoaded: Boolean = false,
-    val bottomImageLoaded: Boolean = false,
-    val topImageError: Boolean = false,
-    val bottomImageError: Boolean = false
+    val isLoading: Boolean = true
 )
+
+// ---------------- VIEWMODEL ----------------
 
 class GameViewModel(
     private val profileRepository: ProfileRepository
@@ -35,117 +53,179 @@ class GameViewModel(
     private val _uiState = MutableStateFlow(GameUiState())
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
 
-    private val _currentStreak = MutableStateFlow(0)
-    val currentStreak: StateFlow<Int> = _currentStreak.asStateFlow()
+    private val _streak = MutableStateFlow(0)
+    val currentStreak: StateFlow<Int> = _streak.asStateFlow()
+
+    // Dummy TEXT data (later kan dit uit database)
+    private val aiTexts = listOf(
+        "AI generates synthetic content",
+        "Neural networks process patterns",
+        "Machine learning predicts outcomes",
+        "Generated text with statistical patterns"
+    )
+
+    private val realTexts = listOf(
+        "I went to the store today",
+        "The weather is nice",
+        "I had breakfast this morning",
+        "I am going to school"
+    )
 
     init {
         loadNextRound()
     }
 
+    // ---------------- MODE SWITCH ----------------
+
+    fun setMode(mode: GameMode) {
+        _uiState.value = _uiState.value.copy(
+            mode = mode,
+            isGameOver = false
+        )
+        loadNextRound()
+    }
+
     fun loadNextRound() {
-        val randomId = (1..MAX_IMAGE_ID).random()
-        val realUrl1 = "$SUPABASE_STORAGE_URL/Real/$randomId.jpg"
-        val realUrl2 = "$SUPABASE_STORAGE_URL/Real/${(randomId % MAX_IMAGE_ID) + 1}.jpg"
-        val aiUrl1   = "$SUPABASE_STORAGE_URL/AI/$randomId.jpg"
-        val aiUrl2   = "$SUPABASE_STORAGE_URL/AI/${(randomId % MAX_IMAGE_ID) + 1}.jpg"
+        when (_uiState.value.mode) {
+            GameMode.IMAGE -> loadImageRound()
+            GameMode.TEXT -> loadTextRound()
+        }
+    }
 
-        val roundType = RoundType.entries.random()
+    // ---------------- IMAGE MODE ----------------
 
-        when (roundType) {
+    private fun loadImageRound() {
+
+        val id = (1..MAX_IMAGE_ID).random()
+
+        val real1 = "$SUPABASE_STORAGE_URL/Real/$id.jpg"
+        val real2 = "$SUPABASE_STORAGE_URL/Real/${id + 1}.jpg"
+        val ai1 = "$SUPABASE_STORAGE_URL/AI/$id.jpg"
+        val ai2 = "$SUPABASE_STORAGE_URL/AI/${id + 1}.jpg"
+
+        val type = RoundType.entries.random()
+
+        when (type) {
+
             RoundType.ONE_REAL -> {
-                val correctTop = Random.nextBoolean()
+                val topIsReal = Random.nextBoolean()
+
                 _uiState.value = _uiState.value.copy(
-                    topImageUrl = if (correctTop) realUrl1 else aiUrl1,
-                    bottomImageUrl = if (correctTop) aiUrl1 else realUrl1,
-                    roundType = roundType,
-                    isCorrectImageTop = correctTop,
-                    showOverlay = false,
-                    isLoading = true,
-                    topImageLoaded = false,
-                    bottomImageLoaded = false,
-                    topImageError = false,
-                    bottomImageError = false
+                    topContent = if (topIsReal) real1 else ai1,
+                    bottomContent = if (topIsReal) ai1 else real1,
+                    isCorrectTop = topIsReal,
+                    isImageMode = true,
+                    roundType = type,
+                    isLoading = false,
+                    showOverlay = false
                 )
             }
+
             RoundType.BOTH_AI -> {
                 _uiState.value = _uiState.value.copy(
-                    topImageUrl = aiUrl1,
-                    bottomImageUrl = aiUrl2,
-                    roundType = roundType,
-                    showOverlay = false,
-                    isLoading = true,
-                    topImageLoaded = false,
-                    bottomImageLoaded = false,
-                    topImageError = false,
-                    bottomImageError = false
+                    topContent = ai1,
+                    bottomContent = ai2,
+                    isImageMode = true,
+                    roundType = type,
+                    isLoading = false,
+                    showOverlay = false
                 )
             }
+
             RoundType.BOTH_REAL -> {
                 _uiState.value = _uiState.value.copy(
-                    topImageUrl = realUrl1,
-                    bottomImageUrl = realUrl2,
-                    roundType = roundType,
-                    showOverlay = false,
-                    isLoading = true,
-                    topImageLoaded = false,
-                    bottomImageLoaded = false,
-                    topImageError = false,
-                    bottomImageError = false
+                    topContent = real1,
+                    bottomContent = real2,
+                    isImageMode = true,
+                    roundType = type,
+                    isLoading = false,
+                    showOverlay = false
                 )
             }
         }
     }
 
-    fun onImageLoadSuccess(isTop: Boolean) {
-        val current = _uiState.value
-        if (isTop) {
-            _uiState.value = current.copy(topImageLoaded = true, topImageError = false)
-        } else {
-            _uiState.value = current.copy(bottomImageLoaded = true, bottomImageError = false)
+    // ---------------- TEXT MODE ----------------
+
+    private fun loadTextRound() {
+
+        val type = RoundType.entries.random()
+
+        val ai1 = aiTexts.random()
+        val ai2 = aiTexts.random()
+
+        val real1 = realTexts.random()
+        val real2 = realTexts.random()
+
+        when (type) {
+
+            RoundType.ONE_REAL -> {
+                val topIsReal = Random.nextBoolean()
+
+                _uiState.value = _uiState.value.copy(
+                    topContent = if (topIsReal) real1 else ai1,
+                    bottomContent = if (topIsReal) ai1 else real1,
+                    isCorrectTop = topIsReal,
+                    isImageMode = false,
+                    roundType = type,
+                    isLoading = false,
+                    showOverlay = false
+                )
+            }
+
+            RoundType.BOTH_AI -> {
+                _uiState.value = _uiState.value.copy(
+                    topContent = ai1,
+                    bottomContent = ai2,
+                    isImageMode = false,
+                    roundType = type,
+                    isLoading = false,
+                    showOverlay = false
+                )
+            }
+
+            RoundType.BOTH_REAL -> {
+                _uiState.value = _uiState.value.copy(
+                    topContent = real1,
+                    bottomContent = real2,
+                    isImageMode = false,
+                    roundType = type,
+                    isLoading = false,
+                    showOverlay = false
+                )
+            }
         }
-        checkBothImagesLoaded()
     }
+    // ---------------- INPUT ----------------
 
-    fun onImageLoadError(isTop: Boolean) {
-        val current = _uiState.value
-        if (isTop) {
-            _uiState.value = current.copy(topImageError = true, topImageLoaded = true)
-        } else {
-            _uiState.value = current.copy(bottomImageError = true, bottomImageLoaded = true)
-        }
-        checkBothImagesLoaded()
-    }
+    fun onSelect(isTop: Boolean) {
 
-    private fun checkBothImagesLoaded() {
-        val current = _uiState.value
-        if (current.topImageLoaded && current.bottomImageLoaded && current.isLoading) {
-            _uiState.value = current.copy(isLoading = false)
-        }
-    }
+        if (_uiState.value.showOverlay) return
 
-    fun onImageSelected(isTop: Boolean) {
-        if (_uiState.value.showOverlay || _uiState.value.isLoading) return
-
-        val isCorrect = when (_uiState.value.roundType) {
-            RoundType.ONE_REAL -> isTop == _uiState.value.isCorrectImageTop
+        val correct = when (_uiState.value.roundType) {
+            RoundType.ONE_REAL -> isTop == _uiState.value.isCorrectTop
             RoundType.BOTH_AI -> false
             RoundType.BOTH_REAL -> false
         }
-        handleResult(isCorrect, tappedTop = isTop)
+
+        handleResult(correct, isTop)
     }
 
     fun onBothAnswer(guessedAi: Boolean) {
-        if (_uiState.value.showOverlay || _uiState.value.isLoading) return
 
-        val isCorrect = when (_uiState.value.roundType) {
+        val correct = when (_uiState.value.roundType) {
             RoundType.ONE_REAL -> false
             RoundType.BOTH_AI -> guessedAi
             RoundType.BOTH_REAL -> !guessedAi
         }
-        handleResult(isCorrect, tappedTop = null)
+
+        handleResult(correct, null)
     }
 
+    // ---------------- RESULT HANDLING ----------------
+
     private fun handleResult(correct: Boolean, tappedTop: Boolean?) {
+
         _uiState.value = _uiState.value.copy(
             showOverlay = true,
             lastResultCorrect = correct,
@@ -153,12 +233,13 @@ class GameViewModel(
         )
 
         viewModelScope.launch {
-            delay(1200)
+            delay(1000)
+
             if (correct) {
-                _currentStreak.value += 1
+                _streak.value++
                 loadNextRound()
             } else {
-                profileRepository.updateHighScore(_currentStreak.value)
+                profileRepository.updateHighScore(_streak.value)
                 _uiState.value = _uiState.value.copy(isGameOver = true)
             }
         }

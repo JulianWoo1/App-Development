@@ -13,6 +13,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.example.realitycheck.ui.game.GameMode
 import com.example.realitycheck.ui.theme.Primary
 
 private val CardBg = Color(0xFF0D0D0D)
@@ -25,7 +26,7 @@ private val PurpleCircle = Color(0xFF5B2EFF)
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
-    onStartGame: () -> Unit
+    onStartGame: (GameMode) -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
 
@@ -75,13 +76,42 @@ fun HomeScreen(
                     xpInCurrent = state.xpInCurrentLevel,
                     xpForNext = state.xpForNextLevel,
                     streak = state.highScoreStreak,
-                    onStartGame = onStartGame,
+                    onStartGame = { onStartGame(GameMode.IMAGE) },
                     modifier = Modifier.padding(top = 28.dp)
                 )
 
                 // Stats Row
                 StatsRow(
                     modifier = Modifier.padding(top = 18.dp)
+                )
+
+                Spacer(modifier = Modifier.height(30.dp))
+
+                Text(
+                    text = "SPELMODI",
+                    color = WelcomeGray,
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.padding(bottom = 14.dp)
+                )
+
+                GameModeCard(
+                    icon = "\uD83D\uDDBC️", // image emoji
+                    title = "Image Mode",
+                    subtitle = "The classic mode",
+                    badge = "Popular",
+                    badgeColor = Color(0xFF1DB954),
+                    onClick = { onStartGame(GameMode.IMAGE) }
+                )
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                GameModeCard(
+                    icon = "\u270D️", // writing emoji
+                    title = "Text Mode",
+                    subtitle = "Detect AI-written text",
+                    badge = "New",
+                    badgeColor = ButtonPurple,
+                    onClick = { onStartGame(GameMode.TEXT) }
                 )
             }
         }
@@ -243,6 +273,91 @@ private fun StatCard(
                 text = label,
                 color = WelcomeGray,
                 style = MaterialTheme.typography.bodyMedium
+            )
+        }
+    }
+}
+
+@Composable
+private fun GameModeCard(
+    icon: String,
+    title: String,
+    subtitle: String,
+    badge: String,
+    badgeColor: Color,
+    onClick: () -> Unit
+) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = CardBg)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp, vertical = 18.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+
+            // Icon box
+            Box(
+                modifier = Modifier
+                    .size(52.dp)
+                    .background(
+                        Color(0xFF161616),
+                        RoundedCornerShape(16.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = icon,
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            // Text content
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = title,
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleMedium
+                )
+
+                Text(
+                    text = subtitle,
+                    color = WelcomeGray,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+
+            // Badge
+            Box(
+                modifier = Modifier
+                    .background(
+                        badgeColor.copy(alpha = 0.15f),
+                        RoundedCornerShape(12.dp)
+                    )
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
+            ) {
+                Text(
+                    text = badge,
+                    color = badgeColor,
+                    style = MaterialTheme.typography.labelMedium
+                )
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Text(
+                text = "›",
+                color = WelcomeGray,
+                style = MaterialTheme.typography.headlineSmall
             )
         }
     }
