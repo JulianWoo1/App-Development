@@ -21,7 +21,11 @@ data class GameUiState(
     val lastResultCorrect: Boolean = false,
     val tappedTop: Boolean? = null,
     val isGameOver: Boolean = false,
-    val isLoading: Boolean = true
+    val isLoading: Boolean = true,
+    val topImageLoaded: Boolean = false,
+    val bottomImageLoaded: Boolean = false,
+    val topImageError: Boolean = false,
+    val bottomImageError: Boolean = false
 )
 
 class GameViewModel(
@@ -39,11 +43,11 @@ class GameViewModel(
     }
 
     fun loadNextRound() {
-        val randomId = (1 until MAX_IMAGE_ID - 3).random()
-        val realUrl1 = "https://picsum.photos/id/$randomId/$IMAGE_SIZE/$IMAGE_SIZE"
-        val realUrl2 = "https://picsum.photos/id/${randomId + 2}/$IMAGE_SIZE/$IMAGE_SIZE"
-        val aiUrl1   = "https://picsum.photos/id/${randomId + 1}/$IMAGE_SIZE/$IMAGE_SIZE"
-        val aiUrl2   = "https://picsum.photos/id/${randomId + 3}/$IMAGE_SIZE/$IMAGE_SIZE"
+        val randomId = (1..MAX_IMAGE_ID).random()
+        val realUrl1 = "$SUPABASE_STORAGE_URL/Real/$randomId.jpg"
+        val realUrl2 = "$SUPABASE_STORAGE_URL/Real/${(randomId % MAX_IMAGE_ID) + 1}.jpg"
+        val aiUrl1   = "$SUPABASE_STORAGE_URL/AI/$randomId.jpg"
+        val aiUrl2   = "$SUPABASE_STORAGE_URL/AI/${(randomId % MAX_IMAGE_ID) + 1}.jpg"
 
         val roundType = RoundType.entries.random()
 
@@ -56,7 +60,11 @@ class GameViewModel(
                     roundType = roundType,
                     isCorrectImageTop = correctTop,
                     showOverlay = false,
-                    isLoading = false
+                    isLoading = true,
+                    topImageLoaded = false,
+                    bottomImageLoaded = false,
+                    topImageError = false,
+                    bottomImageError = false
                 )
             }
             RoundType.BOTH_AI -> {
@@ -65,7 +73,11 @@ class GameViewModel(
                     bottomImageUrl = aiUrl2,
                     roundType = roundType,
                     showOverlay = false,
-                    isLoading = false
+                    isLoading = true,
+                    topImageLoaded = false,
+                    bottomImageLoaded = false,
+                    topImageError = false,
+                    bottomImageError = false
                 )
             }
             RoundType.BOTH_REAL -> {
@@ -74,9 +86,40 @@ class GameViewModel(
                     bottomImageUrl = realUrl2,
                     roundType = roundType,
                     showOverlay = false,
-                    isLoading = false
+                    isLoading = true,
+                    topImageLoaded = false,
+                    bottomImageLoaded = false,
+                    topImageError = false,
+                    bottomImageError = false
                 )
             }
+        }
+    }
+
+    fun onImageLoadSuccess(isTop: Boolean) {
+        val current = _uiState.value
+        if (isTop) {
+            _uiState.value = current.copy(topImageLoaded = true, topImageError = false)
+        } else {
+            _uiState.value = current.copy(bottomImageLoaded = true, bottomImageError = false)
+        }
+        checkBothImagesLoaded()
+    }
+
+    fun onImageLoadError(isTop: Boolean) {
+        val current = _uiState.value
+        if (isTop) {
+            _uiState.value = current.copy(topImageError = true, topImageLoaded = true)
+        } else {
+            _uiState.value = current.copy(bottomImageError = true, bottomImageLoaded = true)
+        }
+        checkBothImagesLoaded()
+    }
+
+    private fun checkBothImagesLoaded() {
+        val current = _uiState.value
+        if (current.topImageLoaded && current.bottomImageLoaded && current.isLoading) {
+            _uiState.value = current.copy(isLoading = false)
         }
     }
 
@@ -122,7 +165,7 @@ class GameViewModel(
     }
 
     companion object {
-        private const val IMAGE_SIZE = 600
-        private const val MAX_IMAGE_ID = 1000
+        private const val MAX_IMAGE_ID = 400
+        private const val SUPABASE_STORAGE_URL = "https://vxqxbbkokdmxgirkhttc.supabase.co/storage/v1/object/public/images"
     }
 }

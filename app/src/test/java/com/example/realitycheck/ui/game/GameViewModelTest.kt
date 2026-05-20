@@ -38,6 +38,10 @@ class GameViewModelTest {
             viewModel.loadNextRound()
         }
 
+        // Simulate both images loading successfully
+        viewModel.onImageLoadSuccess(true)
+        viewModel.onImageLoadSuccess(false)
+
         // Tap whichever image is the correct one
         viewModel.onImageSelected(isTop = viewModel.uiState.value.isCorrectImageTop)
         advanceUntilIdle()
