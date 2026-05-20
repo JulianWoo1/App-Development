@@ -17,4 +17,7 @@
     <color name="red">#FF3B3B</color>
     <color name="yellow">#E2C53A</color>
     <color name="orange">#FFAE42</color>
+
+    <color name="background_dark">#050505</color>
+    <color name="image_background">#121212</color>
 </resources>

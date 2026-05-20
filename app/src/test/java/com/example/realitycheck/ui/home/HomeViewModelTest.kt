@@ -4,6 +4,7 @@ import com.example.realitycheck.data.repository.FakeProfileRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -30,6 +31,7 @@ class HomeViewModelTest {
     fun `initial streak is 0`() = runTest(testDispatcher) {
         val repo = FakeProfileRepository()
         val viewModel = HomeViewModel(repo)
-        assertEquals(0, viewModel.bestStreak.value)
+        advanceUntilIdle()
+        assertEquals(0, viewModel.uiState.value.highScoreStreak)
     }
 }
