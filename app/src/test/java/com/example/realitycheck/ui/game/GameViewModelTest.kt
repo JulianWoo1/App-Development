@@ -15,6 +15,7 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class GameViewModelTest {
+
     private val testDispatcher = StandardTestDispatcher()
 
     @Before
@@ -29,23 +30,29 @@ class GameViewModelTest {
 
     @Test
     fun `correct guess increases streak`() = runTest(testDispatcher) {
-        val profileRepo = FakeProfileRepository()
 
+        val profileRepo = FakeProfileRepository()
         val viewModel = GameViewModel(profileRepo)
 
-        // Keep loading until we get ONE_REAL round (1/3 chance each time)
-        while (viewModel.uiState.value.roundType != RoundType.ONE_REAL) {
-            viewModel.loadNextRound()
-        }
-
-        // Simulate both images loading successfully
-        viewModel.onImageLoadSuccess(true)
-        viewModel.onImageLoadSuccess(false)
-
-        // Tap whichever image is the correct one
-        viewModel.onImageSelected(isTop = viewModel.uiState.value.isCorrectImageTop)
+        // Wait until first round is ready
         advanceUntilIdle()
 
+        // If not ONE_REAL, keep generating new rounds
+        while (viewModel.uiState.value.roundType != RoundType.ONE_REAL) {
+            viewModel.loadNextRound()
+            advanceUntilIdle()
+        }
+
+        val state = viewModel.uiState.value
+
+        // Pick correct answer based on real ViewModel logic
+        val isTopCorrect = state.isCorrectTop
+
+        // ACT: simulate user selection
+        viewModel.onSelect(isTopCorrect)
+        advanceUntilIdle()
+
+        // ASSERT: streak increased
         assertEquals(1, viewModel.currentStreak.value)
     }
 }
