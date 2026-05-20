@@ -60,7 +60,7 @@ fun NoInternetScreen(
 
             // Title
             Text(
-                text = "Geen internetverbinding",
+                text = "No internet connection",
                 color = Color.White,
                 style = MaterialTheme.typography.headlineLarge,
                 textAlign = TextAlign.Center,
@@ -69,7 +69,7 @@ fun NoInternetScreen(
 
             // Subtitle
             Text(
-                text = "Verbinding met internet mislukt. Controleer je verbinding en probeer het opnieuw.",
+                text = "Connection failed. Check your connection and try again.",
                 color = SubtitleGray,
                 style = MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.Center,
@@ -102,7 +102,7 @@ fun NoInternetScreen(
                     )
                 } else {
                     Text(
-                        text = "Opnieuw proberen",
+                        text = "Try Again",
                         style = MaterialTheme.typography.titleLarge,
                         color = Color.White
                     )
@@ -135,12 +135,12 @@ fun NoInternetScreen(
 
                     Column(modifier = Modifier.padding(start = 18.dp)) {
                         Text(
-                            text = "Wat kun je doen?",
+                            text = "What can you do?",
                             color = Color.White,
                             style = MaterialTheme.typography.titleMedium
                         )
                         Text(
-                            text = "Controleer je wifi of mobiele data en probeer het opnieuw.",
+                            text = "Check your WIFI or mobile data and try again.",
                             color = SubtitleGray,
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.padding(top = 6.dp)

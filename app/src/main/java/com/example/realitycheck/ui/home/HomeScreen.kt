@@ -48,7 +48,7 @@ fun HomeScreen(
             ) {
                 // Welcome
                 Text(
-                    text = "Welkom terug",
+                    text = "Welcome Back",
                     color = WelcomeGray,
                     style = MaterialTheme.typography.bodyMedium
                 )
@@ -63,7 +63,7 @@ fun HomeScreen(
 
                 // Subtitle
                 Text(
-                    text = "Kun jij echt van AI onderscheiden?",
+                    text = "Can you differentiate real from AI?",
                     color = SubtitleGray,
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.padding(top = 4.dp)
@@ -124,7 +124,7 @@ private fun LevelCard(
                         .padding(start = 14.dp)
                 ) {
                     Text(
-                        text = "Niveau $level",
+                        text = "Level $level",
                         color = Color.White,
                         style = MaterialTheme.typography.titleLarge
                     )
@@ -173,13 +173,13 @@ private fun LevelCard(
                 onClick = onStartGame,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(60.dp)
+                    .height(80.dp)
                     .padding(top = 22.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = ButtonPurple),
                 shape = RoundedCornerShape(20.dp)
             ) {
                 Text(
-                    text = "Speel nu \u2192",
+                    text = "Play Now \u2192",
                     style = MaterialTheme.typography.titleLarge,
                     color = Color.White
                 )
@@ -197,7 +197,7 @@ private fun StatsRow(modifier: Modifier = Modifier) {
         StatCard(
             emoji = "\uD83C\uDFAF",
             value = "68%",
-            label = "Accuraat",
+            label = "Accurate",
             modifier = Modifier.weight(1f)
         )
         StatCard(
@@ -209,7 +209,7 @@ private fun StatsRow(modifier: Modifier = Modifier) {
         StatCard(
             emoji = "\u26A1",
             value = "1.2s",
-            label = "Snelst",
+            label = "Fastest",
             modifier = Modifier.weight(1f)
         )
     }

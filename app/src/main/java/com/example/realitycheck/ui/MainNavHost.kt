@@ -76,7 +76,7 @@ fun MainNavHost() {
     ) { paddingValues ->
         NavHost(
             navController = navController,
-            startDestination = "onboarding",
+            startDestination = "home",
             modifier = Modifier.padding(paddingValues)
         ) {
             composable("onboarding") {
