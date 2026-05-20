@@ -1,6 +1,5 @@
 package com.example.realitycheck.ui.game
 
-import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -15,7 +14,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import coil.compose.AsyncImagePainter
 import com.example.realitycheck.di.ImageLoaderFactory
 
 @Composable
@@ -25,55 +23,65 @@ fun GameScreen(
 ) {
     val context = LocalContext.current
     val imageLoader = remember { ImageLoaderFactory.create(context) }
+
     val state by viewModel.uiState.collectAsState()
     val streak by viewModel.currentStreak.collectAsState()
 
-    Box(modifier = Modifier.fillMaxSize().background(Color(0xFF1a1a2e))) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF1a1a2e))
+    ) {
+
         if (!state.isGameOver) {
+
             Column(modifier = Modifier.fillMaxSize()) {
-            Column(modifier = Modifier.weight(1f)) {
-                GameImageBox(
-                    imageUrl = state.topImageUrl,
-                    onClick = { viewModel.onImageSelected(true) },
-                    enabled = !state.isLoading && !state.showOverlay,
-                    showOverlay = state.showOverlay && state.tappedTop != false,
-                    isCorrect = state.lastResultCorrect,
-                    isTop = true,
-                    modifier = Modifier.weight(1f),
-                    imageLoader = imageLoader,
-                    onImageLoadSuccess = { viewModel.onImageLoadSuccess(true) },
-                    onImageLoadError = { viewModel.onImageLoadError(true) }
-                )
 
-                GameImageBox(
-                    imageUrl = state.bottomImageUrl,
-                    onClick = { viewModel.onImageSelected(false) },
-                    enabled = !state.isLoading && !state.showOverlay,
-                    showOverlay = state.showOverlay && state.tappedTop != true,
-                    isCorrect = state.lastResultCorrect,
-                    isTop = false,
-                    modifier = Modifier.weight(1f),
-                    imageLoader = imageLoader,
-                    onImageLoadSuccess = { viewModel.onImageLoadSuccess(false) },
-                    onImageLoadError = { viewModel.onImageLoadError(false) }
-                )
-            }
+                // -------- TOP + BOTTOM --------
+                Column(modifier = Modifier.weight(1f)) {
 
+                    GameContentBox(
+                        content = state.topContent,
+                        isImage = state.isImageMode,
+                        onClick = { viewModel.onSelect(true) },
+                        enabled = !state.isLoading && !state.showOverlay,
+                        showOverlay = state.showOverlay && state.tappedTop != false,
+                        isCorrect = state.lastResultCorrect,
+                        modifier = Modifier.weight(1f),
+                        imageLoader = imageLoader
+                    )
+
+                    GameContentBox(
+                        content = state.bottomContent,
+                        isImage = state.isImageMode,
+                        onClick = { viewModel.onSelect(false) },
+                        enabled = !state.isLoading && !state.showOverlay,
+                        showOverlay = state.showOverlay && state.tappedTop != true,
+                        isCorrect = state.lastResultCorrect,
+                        modifier = Modifier.weight(1f),
+                        imageLoader = imageLoader
+                    )
+                }
+
+                // -------- BOTTOM BUTTONS --------
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp)
                 ) {
+
                     Button(
-                        onClick = { viewModel.onBothAnswer(guessedAi = true) },
+                        onClick = { viewModel.onBothAnswer(true) },
                         enabled = !state.isLoading && !state.showOverlay,
                         modifier = Modifier.weight(1f)
                     ) {
                         Text("Both AI")
                     }
+
                     Spacer(modifier = Modifier.width(8.dp))
+
                     Button(
-                        onClick = { viewModel.onBothAnswer(guessedAi = false) },
+                        onClick = { viewModel.onBothAnswer(false) },
                         enabled = !state.isLoading && !state.showOverlay,
                         modifier = Modifier.weight(1f)
                     ) {
@@ -82,13 +90,17 @@ fun GameScreen(
                 }
             }
 
+            // -------- STREAK --------
             Text(
                 text = streak.toString(),
-                modifier = Modifier.align(Alignment.TopCenter).padding(top = 32.dp),
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 32.dp),
                 style = MaterialTheme.typography.displayMedium,
                 color = Color.White
             )
 
+            // -------- LOADING --------
             if (state.isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.align(Alignment.Center),
@@ -97,6 +109,7 @@ fun GameScreen(
             }
         }
 
+        // -------- GAME OVER --------
         if (state.isGameOver) {
             AlertDialog(
                 onDismissRequest = {},
@@ -113,65 +126,40 @@ fun GameScreen(
 }
 
 @Composable
-private fun GameImageBox(
-    imageUrl: String?,
+private fun GameContentBox(
+    content: String?,
+    isImage: Boolean,
     onClick: () -> Unit,
     enabled: Boolean,
     showOverlay: Boolean,
     isCorrect: Boolean,
-    isTop: Boolean,
     modifier: Modifier = Modifier,
-    imageLoader: coil.ImageLoader,
-    onImageLoadSuccess: () -> Unit,
-    onImageLoadError: () -> Unit
+    imageLoader: coil.ImageLoader
 ) {
-    var loadState by remember { mutableStateOf<AsyncImagePainter.State>(AsyncImagePainter.State.Empty) }
-
     Box(
         modifier = modifier
             .fillMaxWidth()
             .background(Color(0xFF2d2d44))
             .clickable(enabled = enabled) { onClick() }
     ) {
-        AsyncImage(
-            model = imageUrl,
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop,
-            imageLoader = imageLoader,
-            onState = { state ->
-                loadState = state
-                when (state) {
-                    is AsyncImagePainter.State.Success -> onImageLoadSuccess()
-                    is AsyncImagePainter.State.Error -> onImageLoadError()
-                    else -> {}
-                }
-            }
-        )
 
-        if (loadState is AsyncImagePainter.State.Loading) {
-            CircularProgressIndicator(
-                modifier = Modifier.align(Alignment.Center),
-                color = Color.White.copy(alpha = 0.7f)
+        if (isImage) {
+            AsyncImage(
+                model = content,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+                imageLoader = imageLoader
             )
-        }
-
-        if (loadState is AsyncImagePainter.State.Error) {
-            Column(
-                modifier = Modifier.align(Alignment.Center),
-                horizontalAlignment = Alignment.CenterHorizontally
+        } else {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.Refresh,
-                    contentDescription = null,
-                    tint = Color.White.copy(alpha = 0.5f),
-                    modifier = Modifier.size(48.dp)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Failed to load",
-                    color = Color.White.copy(alpha = 0.5f),
-                    style = MaterialTheme.typography.bodySmall
+                    text = content ?: "",
+                    color = Color.White,
+                    style = MaterialTheme.typography.bodyLarge
                 )
             }
         }
@@ -180,7 +168,12 @@ private fun GameImageBox(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(if (isCorrect) Color.Green.copy(alpha = 0.5f) else Color.Red.copy(alpha = 0.5f))
+                    .background(
+                        if (isCorrect)
+                            Color.Green.copy(alpha = 0.5f)
+                        else
+                            Color.Red.copy(alpha = 0.5f)
+                    )
             )
         }
     }
