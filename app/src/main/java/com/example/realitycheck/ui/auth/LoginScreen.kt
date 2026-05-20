@@ -15,18 +15,37 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import com.example.realitycheck.MainActivity
 import com.example.realitycheck.data.di.SupabaseModule
 import com.example.realitycheck.ui.components.AuthButton
 import com.example.realitycheck.ui.components.AuthTextField
-import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(onNavigateToRegister: () -> Unit) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
+    val viewModel: AuthViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return AuthViewModel(SupabaseModule.authRepository) as T
+            }
+        }
+    )
+    
+    val authState by viewModel.authState.collectAsState()
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
+
+    LaunchedEffect(authState) {
+        when (val state = authState) {
+            is AuthState.Success -> navigateToMain(context)
+            is AuthState.Error -> Toast.makeText(context, state.message, Toast.LENGTH_SHORT).show()
+            else -> {}
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -71,32 +90,27 @@ fun LoginScreen(onNavigateToRegister: () -> Unit) {
                         Toast.makeText(context, "Please enter email first", Toast.LENGTH_SHORT).show()
                         return@clickable
                     }
-                    scope.launch {
-                        SupabaseModule.authRepository.resetPassword(email).fold(
-                            onSuccess = { Toast.makeText(context, "Reset email sent", Toast.LENGTH_SHORT).show() },
-                            onFailure = { Toast.makeText(context, "Error: ${it.message}", Toast.LENGTH_SHORT).show() }
-                        )
-                    }
+                    viewModel.resetPassword(email)
+                    Toast.makeText(context, "Reset email sent if account exists", Toast.LENGTH_SHORT).show()
                 }
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        AuthButton(
-            text = "Login",
-            onClick = {
-                if (email.isEmpty() || password.isEmpty()) {
-                    Toast.makeText(context, "Please enter email and password", Toast.LENGTH_SHORT).show()
-                    return@AuthButton
+        if (authState is AuthState.Loading) {
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+        } else {
+            AuthButton(
+                text = "Login",
+                onClick = {
+                    if (email.isEmpty() || password.isEmpty()) {
+                        Toast.makeText(context, "Please enter email and password", Toast.LENGTH_SHORT).show()
+                        return@AuthButton
+                    }
+                    viewModel.signIn(email, password)
                 }
-                scope.launch {
-                    SupabaseModule.authRepository.signIn(email, password).fold(
-                        onSuccess = { navigateToMain(context) },
-                        onFailure = { Toast.makeText(context, "Login failed: ${it.message}", Toast.LENGTH_SHORT).show() }
-                    )
-                }
-            }
-        )
+            )
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
