@@ -20,4 +20,5 @@
 
     <color name="background_dark">#050505</color>
     <color name="image_background">#121212</color>
+    <color name="divider">#333333</color>
 </resources>
