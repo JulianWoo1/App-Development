@@ -20,6 +20,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.realitycheck.data.di.SupabaseModule
 import com.example.realitycheck.ui.badges.BadgesScreen
+import com.example.realitycheck.ui.game.GameMode
 import com.example.realitycheck.ui.game.GameScreen
 import com.example.realitycheck.ui.game.GameViewModel
 import com.example.realitycheck.ui.home.HomeScreen
@@ -96,7 +97,16 @@ fun MainNavHost() {
                         }
                     }
                 )
-                HomeScreen(homeViewModel, onStartGame = { navController.navigate("game") })
+                HomeScreen(
+                    homeViewModel,
+                    onStartGame = { mode ->
+                        val route = when (mode) {
+                            GameMode.IMAGE -> "game/image"
+                            GameMode.TEXT -> "game/text"
+                        }
+                        navController.navigate(route)
+                    }
+                )
             }
             composable("scores") {
                 ScoresScreen()
@@ -107,7 +117,14 @@ fun MainNavHost() {
             composable("profile") {
                 ProfileScreen()
             }
-            composable("game") {
+            composable("game/{mode}") { backStackEntry ->
+                val mode = backStackEntry.arguments?.getString("mode")
+
+                val gameMode = when (mode) {
+                    "text" -> GameMode.TEXT
+                    else -> GameMode.IMAGE
+                }
+
                 val gameViewModel: GameViewModel = viewModel(
                     factory = object : ViewModelProvider.Factory {
                         override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -115,7 +132,15 @@ fun MainNavHost() {
                         }
                     }
                 )
-                GameScreen(gameViewModel, onGameOver = { navController.popBackStack() })
+
+                LaunchedEffect(gameMode) {
+                    gameViewModel.setMode(gameMode)
+                }
+
+                GameScreen(
+                    viewModel = gameViewModel,
+                    onGameOver = { navController.popBackStack() }
+                )
             }
         }
     }
