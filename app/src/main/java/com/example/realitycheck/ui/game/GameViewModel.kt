@@ -14,7 +14,8 @@ import kotlin.random.Random
 
 enum class GameMode {
     IMAGE,
-    TEXT
+    TEXT,
+    SPEED
 }
 
 enum class RoundType {
@@ -41,7 +42,8 @@ data class GameUiState(
     val tappedTop: Boolean? = null,
 
     val isGameOver: Boolean = false,
-    val isLoading: Boolean = true
+    val isLoading: Boolean = true,
+    val timeRemainingSeconds: Int? = null
 )
 
 // ---------------- VIEWMODEL ----------------
@@ -89,6 +91,7 @@ class GameViewModel(
         when (_uiState.value.mode) {
             GameMode.IMAGE -> loadImageRound()
             GameMode.TEXT -> loadTextRound()
+            GameMode.SPEED -> { }
         }
     }
 
