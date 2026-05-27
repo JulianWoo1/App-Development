@@ -23,6 +23,7 @@ import com.example.realitycheck.ui.badges.BadgesScreen
 import com.example.realitycheck.ui.game.GameMode
 import com.example.realitycheck.ui.game.GameScreen
 import com.example.realitycheck.ui.game.GameViewModel
+import com.example.realitycheck.ui.gameover.GameOverScreen
 import com.example.realitycheck.ui.home.HomeScreen
 import com.example.realitycheck.ui.home.HomeViewModel
 import com.example.realitycheck.ui.onboarding.OnboardingScreen
@@ -139,7 +140,27 @@ fun MainNavHost() {
 
                 GameScreen(
                     viewModel = gameViewModel,
-                    onGameOver = { navController.popBackStack() }
+                    onGameOver = { navController.navigate("game_over") }
+                )
+            }
+            composable("game_over") {
+                GameOverScreen(
+                    score = "2.340",
+                    accuracy = "74%",
+                    fastestTime = "1.4s",
+                    bestRank = "#18",
+                    level = 23,
+                    currentXp = 2820,
+                    maxXp = 5000,
+                    gainedXp = 230,
+                    onPlayAgain = {
+                        navController.navigate("home") {
+                            popUpTo("home") { inclusive = true }
+                        }
+                    },
+                    onHome = {
+                        navController.navigate("home")
+                    }
                 )
             }
         }
