@@ -46,18 +46,36 @@ private val bottomNavItemsList = listOf(
 
 @Composable
 fun MainNavHost() {
-    val navController = rememberNavController()
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentDestination = navBackStackEntry?.destination
 
-    val showBottomNav = currentDestination?.route in bottomNavItems
+    val navController = rememberNavController()
+
+    val homeViewModel: HomeViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return HomeViewModel(SupabaseModule.profileRepository) as T
+            }
+        }
+    )
+
+    val showBottomNav =
+        navController.currentBackStackEntryAsState().value?.destination?.route in listOf(
+            "home", "scores", "badges", "profile"
+        )
 
     Scaffold(
         bottomBar = {
             if (showBottomNav) {
                 NavigationBar {
-                    bottomNavItemsList.forEach { item ->
-                        val selected = currentDestination?.route == item.route
+                    listOf(
+                        BottomNavItem("home", "Home", Icons.Default.Home),
+                        BottomNavItem("scores", "Scores", Icons.Default.Star),
+                        BottomNavItem("badges", "Badges", Icons.Default.Favorite),
+                        BottomNavItem("profile", "Profiel", Icons.Default.Person)
+                    ).forEach { item ->
+
+                        val selected =
+                            navController.currentBackStackEntryAsState().value?.destination?.route == item.route
+
                         NavigationBarItem(
                             selected = selected,
                             onClick = {
@@ -67,7 +85,7 @@ fun MainNavHost() {
                                     restoreState = true
                                 }
                             },
-                            icon = { Icon(item.icon, contentDescription = item.label) },
+                            icon = { Icon(item.icon, null) },
                             label = { Text(item.label) }
                         )
                     }
@@ -75,30 +93,16 @@ fun MainNavHost() {
             }
         }
     ) { paddingValues ->
+
         NavHost(
             navController = navController,
             startDestination = "home",
             modifier = Modifier.padding(paddingValues)
         ) {
-            composable("onboarding") {
-                OnboardingScreen(
-                    onComplete = {
-                        navController.navigate("home") {
-                            popUpTo("onboarding") { inclusive = true }
-                        }
-                    }
-                )
-            }
+
             composable("home") {
-                val homeViewModel: HomeViewModel = viewModel(
-                    factory = object : ViewModelProvider.Factory {
-                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                            return HomeViewModel(SupabaseModule.profileRepository) as T
-                        }
-                    }
-                )
                 HomeScreen(
-                    homeViewModel,
+                    viewModel = homeViewModel,
                     onStartGame = { mode ->
                         val route = when (mode) {
                             GameMode.IMAGE -> "game/image"
@@ -108,16 +112,9 @@ fun MainNavHost() {
                     }
                 )
             }
-            composable("scores") {
-                ScoresScreen()
-            }
-            composable("badges") {
-                BadgesScreen()
-            }
-            composable("profile") {
-                ProfileScreen()
-            }
+
             composable("game/{mode}") { backStackEntry ->
+
                 val mode = backStackEntry.arguments?.getString("mode")
 
                 val gameMode = when (mode) {
@@ -128,7 +125,12 @@ fun MainNavHost() {
                 val gameViewModel: GameViewModel = viewModel(
                     factory = object : ViewModelProvider.Factory {
                         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                            return GameViewModel(SupabaseModule.profileRepository) as T
+                            return GameViewModel(
+                                SupabaseModule.profileRepository,
+                                onXpUpdated = {
+                                    homeViewModel.loadProfile()
+                                }
+                            ) as T
                         }
                     }
                 )
@@ -139,7 +141,10 @@ fun MainNavHost() {
 
                 GameScreen(
                     viewModel = gameViewModel,
-                    onGameOver = { navController.popBackStack() }
+                    onGameOver = {
+                        homeViewModel.loadProfile()
+                        navController.popBackStack()
+                    }
                 )
             }
         }

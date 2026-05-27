@@ -2,7 +2,6 @@ package com.example.realitycheck.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.realitycheck.data.model.Profile
 import com.example.realitycheck.data.repository.ProfileRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -10,17 +9,19 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 data class HomeUiState(
-    val profile: Profile? = null,
-    val isLoading: Boolean = true,
     val displayName: String = "Speler",
     val totalXp: Int = 0,
-    val highScoreStreak: Int = 0,
     val level: Int = 1,
     val xpInCurrentLevel: Int = 0,
-    val xpForNextLevel: Int = 5000
+    val xpForNextLevel: Int = 100,
+    val highScoreStreak: Int = 0,
+    val isLoading: Boolean = true
 )
 
-class HomeViewModel(private val profileRepository: ProfileRepository) : ViewModel() {
+class HomeViewModel(
+    private val profileRepository: ProfileRepository
+) : ViewModel() {
+
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
@@ -28,47 +29,54 @@ class HomeViewModel(private val profileRepository: ProfileRepository) : ViewMode
         loadProfile()
     }
 
-    private fun loadProfile() {
+    fun loadProfile() {
         viewModelScope.launch {
-            profileRepository.getCurrentUserProfile().onSuccess { profile ->
-                val levelInfo = calculateLevel(profile.totalXp)
-                _uiState.value = _uiState.value.copy(
-                    profile = profile,
-                    isLoading = false,
-                    displayName = profile.username ?: "Speler",
-                    totalXp = profile.totalXp,
-                    highScoreStreak = profile.highScoreStreak,
-                    level = levelInfo.level,
-                    xpInCurrentLevel = levelInfo.xpInCurrentLevel,
-                    xpForNextLevel = levelInfo.xpForNextLevel
-                )
-            }.onFailure {
-                _uiState.value = _uiState.value.copy(isLoading = false)
-            }
+            _uiState.value = _uiState.value.copy(isLoading = true)
+
+            profileRepository.getCurrentUserProfile()
+                .onSuccess { profile ->
+
+                    val levelInfo = calculateLevel(profile.totalXp)
+
+                    _uiState.value = HomeUiState(
+                        displayName = profile.username ?: "Speler",
+                        totalXp = profile.totalXp,
+                        highScoreStreak = profile.highScoreStreak,
+                        level = levelInfo.level,
+                        xpInCurrentLevel = levelInfo.xpInCurrentLevel,
+                        xpForNextLevel = levelInfo.xpForNextLevel,
+                        isLoading = false
+                    )
+                }
+                .onFailure {
+                    _uiState.value = _uiState.value.copy(isLoading = false)
+                }
         }
     }
 
     private fun calculateLevel(totalXp: Int): LevelInfo {
-        var remaining = totalXp
+        var xp = totalXp
         var level = 1
-        var xpForNext = 5000
-        var xpInCurrent = 0
+        var needed = 100
 
-        while (remaining >= xpForNext) {
-            remaining -= xpForNext
+        while (xp >= needed) {
+            xp -= needed
             level++
-            xpInCurrent = remaining
-            xpForNext = when {
-                level <= 5 -> 5000
-                level <= 10 -> 7500
-                level <= 20 -> 10000
-                else -> 15000
+
+            needed = when {
+                level <= 5 -> 100
+                level <= 10 -> 250
+                level <= 20 -> 500
+                else -> 1000
             }
         }
-        xpInCurrent = remaining
 
-        return LevelInfo(level, xpInCurrent, xpForNext)
+        return LevelInfo(level, xp, needed)
     }
 
-    data class LevelInfo(val level: Int, val xpInCurrentLevel: Int, val xpForNextLevel: Int)
+    data class LevelInfo(
+        val level: Int,
+        val xpInCurrentLevel: Int,
+        val xpForNextLevel: Int
+    )
 }

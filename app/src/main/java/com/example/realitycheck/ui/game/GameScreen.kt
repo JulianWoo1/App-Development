@@ -100,6 +100,17 @@ fun GameScreen(
                 color = Color.White
             )
 
+            // xp earned
+            if (state.earnedXp > 0) {
+                Text(
+                    text = "+${state.earnedXp} XP",
+                    color = Color.Yellow,
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                )
+            }
+
             // -------- LOADING --------
             if (state.isLoading) {
                 CircularProgressIndicator(

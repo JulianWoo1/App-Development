@@ -10,8 +10,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 
-// ---------------- MODE ----------------
-
 enum class GameMode {
     IMAGE,
     TEXT
@@ -22,8 +20,6 @@ enum class RoundType {
     BOTH_AI,
     BOTH_REAL
 }
-
-// ---------------- UI STATE ----------------
 
 data class GameUiState(
     val mode: GameMode = GameMode.IMAGE,
@@ -41,13 +37,14 @@ data class GameUiState(
     val tappedTop: Boolean? = null,
 
     val isGameOver: Boolean = false,
-    val isLoading: Boolean = true
+    val isLoading: Boolean = true,
+
+    val earnedXp: Int = 0
 )
 
-// ---------------- VIEWMODEL ----------------
-
 class GameViewModel(
-    private val profileRepository: ProfileRepository
+    private val profileRepository: ProfileRepository,
+    private val onXpUpdated: () -> Unit
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GameUiState())
@@ -56,7 +53,6 @@ class GameViewModel(
     private val _streak = MutableStateFlow(0)
     val currentStreak: StateFlow<Int> = _streak.asStateFlow()
 
-    // Dummy TEXT data (later kan dit uit database)
     private val aiTexts = listOf(
         "AI generates synthetic content",
         "Neural networks process patterns",
@@ -75,8 +71,6 @@ class GameViewModel(
         loadNextRound()
     }
 
-    // ---------------- MODE SWITCH ----------------
-
     fun setMode(mode: GameMode) {
         _uiState.value = _uiState.value.copy(
             mode = mode,
@@ -92,16 +86,14 @@ class GameViewModel(
         }
     }
 
-    // ---------------- IMAGE MODE ----------------
-
     private fun loadImageRound() {
 
-        val id = (1..MAX_IMAGE_ID).random()
+        val id = (1..400).random()
 
-        val real1 = "$SUPABASE_STORAGE_URL/Real/$id.jpg"
-        val real2 = "$SUPABASE_STORAGE_URL/Real/${id + 1}.jpg"
-        val ai1 = "$SUPABASE_STORAGE_URL/AI/$id.jpg"
-        val ai2 = "$SUPABASE_STORAGE_URL/AI/${id + 1}.jpg"
+        val real1 = "https://vxqxbbkokdmxgirkhttc.supabase.co/storage/v1/object/public/images/Real/$id.jpg"
+        val real2 = "https://vxqxbbkokdmxgirkhttc.supabase.co/storage/v1/object/public/images/Real/${id + 1}.jpg"
+        val ai1 = "https://vxqxbbkokdmxgirkhttc.supabase.co/storage/v1/object/public/images/AI/$id.jpg"
+        val ai2 = "https://vxqxbbkokdmxgirkhttc.supabase.co/storage/v1/object/public/images/AI/${id + 1}.jpg"
 
         val type = RoundType.entries.random()
 
@@ -145,15 +137,12 @@ class GameViewModel(
         }
     }
 
-    // ---------------- TEXT MODE ----------------
-
     private fun loadTextRound() {
 
         val type = RoundType.entries.random()
 
         val ai1 = aiTexts.random()
         val ai2 = aiTexts.random()
-
         val real1 = realTexts.random()
         val real2 = realTexts.random()
 
@@ -196,7 +185,6 @@ class GameViewModel(
             }
         }
     }
-    // ---------------- INPUT ----------------
 
     fun onSelect(isTop: Boolean) {
 
@@ -222,8 +210,6 @@ class GameViewModel(
         handleResult(correct, null)
     }
 
-    // ---------------- RESULT HANDLING ----------------
-
     private fun handleResult(correct: Boolean, tappedTop: Boolean?) {
 
         _uiState.value = _uiState.value.copy(
@@ -233,20 +219,39 @@ class GameViewModel(
         )
 
         viewModelScope.launch {
+
             delay(1000)
 
             if (correct) {
+
                 _streak.value++
+
+                val xpEarned =
+                    GameRewards.CORRECT_ANSWER_XP +
+                            GameRewards.streakBonus(_streak.value)
+
+                _uiState.value = _uiState.value.copy(
+                    earnedXp = xpEarned
+                )
+
+
+                profileRepository.addXp(xpEarned)
+                    .onSuccess {
+                        onXpUpdated()
+                    }
+
+                delay(1200)
+
+                _uiState.value = _uiState.value.copy(
+                    earnedXp = 0
+                )
+
                 loadNextRound()
+
             } else {
                 profileRepository.updateHighScore(_streak.value)
                 _uiState.value = _uiState.value.copy(isGameOver = true)
             }
         }
-    }
-
-    companion object {
-        private const val MAX_IMAGE_ID = 400
-        private const val SUPABASE_STORAGE_URL = "https://vxqxbbkokdmxgirkhttc.supabase.co/storage/v1/object/public/images"
     }
 }

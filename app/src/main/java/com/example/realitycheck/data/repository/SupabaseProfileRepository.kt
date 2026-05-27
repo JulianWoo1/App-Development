@@ -4,6 +4,7 @@ import com.example.realitycheck.data.model.Profile
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
+import io.github.jan.supabase.postgrest.rpc
 
 class SupabaseProfileRepository(
     private val supabaseClient: SupabaseClient,
@@ -13,15 +14,18 @@ class SupabaseProfileRepository(
     private val table = supabaseClient.postgrest["profiles"]
 
     override suspend fun getCurrentUserProfile(): Result<Profile> {
-        val userId = authRepository.getCurrentUserId() ?: return Result.failure(Exception("No user logged in"))
+        val userId = authRepository.getCurrentUserId()
+            ?: return Result.failure(Exception("No user logged in"))
+
         return getProfile(userId)
     }
 
     override suspend fun getProfile(userId: String): Result<Profile> {
         return try {
-            val profile = table.select { 
-                filter { eq("id", userId) } 
+            val profile = table.select {
+                filter { eq("id", userId) }
             }.decodeSingle<Profile>()
+
             Result.success(profile)
         } catch (e: Exception) {
             Result.failure(e)
@@ -30,10 +34,11 @@ class SupabaseProfileRepository(
 
     override suspend fun getTopProfiles(limit: Int): Result<List<Profile>> {
         return try {
-            val profiles = table.select { 
+            val profiles = table.select {
                 order("total_xp", Order.DESCENDING)
-                limit(limit.toLong()) 
+                limit(limit.toLong())
             }.decodeList<Profile>()
+
             Result.success(profiles)
         } catch (e: Exception) {
             Result.failure(e)
@@ -41,62 +46,54 @@ class SupabaseProfileRepository(
     }
 
     override suspend fun updateUsername(newUsername: String): Result<Profile> {
-         val userId = authRepository.getCurrentUserId() ?: return Result.failure(Exception("No user logged in"))
-         return try {
-            val updated = table.update(
-                {
-                    set("username", newUsername)
-                }
-            ) { 
-                filter { eq("id", userId) } 
+        val userId = authRepository.getCurrentUserId()
+            ?: return Result.failure(Exception("No user logged in"))
+
+        return try {
+            val updated = table.update({
+                set("username", newUsername)
+            }) {
+                filter { eq("id", userId) }
             }.decodeSingle<Profile>()
+
             Result.success(updated)
-         } catch (e: Exception) {
+        } catch (e: Exception) {
             Result.failure(e)
-         }
+        }
     }
 
-    override suspend fun addXp(amount: Int): Result<Profile> {
-        val currentProfileResult = getCurrentUserProfile()
-        if (currentProfileResult.isFailure) return currentProfileResult
-
-        val currentProfile = currentProfileResult.getOrNull()!!
-        val newXp = currentProfile.totalXp + amount
-        
+    override suspend fun addXp(amount: Int): Result<Unit> {
         return try {
-            val updated = table.update(
-                {
-                    set("total_xp", newXp)
-                }
-            ) { 
-                filter { eq("id", currentProfile.id) } 
-            }.decodeSingle<Profile>()
-            Result.success(updated)
-         } catch (e: Exception) {
+            supabaseClient.postgrest.rpc(
+                "add_xp",
+                mapOf("amount" to amount)
+            )
+            Result.success(Unit)
+        } catch (e: Exception) {
             Result.failure(e)
-         }
+        }
     }
 
     override suspend fun updateHighScore(newStreak: Int): Result<Profile> {
-        val currentProfileResult = getCurrentUserProfile()
-        if (currentProfileResult.isFailure) return currentProfileResult
+        val current = getCurrentUserProfile()
+        if (current.isFailure) return current.map { it }
 
-        val currentProfile = currentProfileResult.getOrNull()!!
-        if (newStreak <= currentProfile.highScoreStreak) {
-            return Result.success(currentProfile)
+        val profile = current.getOrNull()!!
+
+        if (newStreak <= profile.highScoreStreak) {
+            return Result.success(profile)
         }
 
         return try {
-            val updated = table.update(
-                {
-                    set("high_score_streak", newStreak)
-                }
-            ) { 
-                filter { eq("id", currentProfile.id) } 
+            val updated = table.update({
+                set("high_score_streak", newStreak)
+            }) {
+                filter { eq("id", profile.id) }
             }.decodeSingle<Profile>()
+
             Result.success(updated)
-         } catch (e: Exception) {
+        } catch (e: Exception) {
             Result.failure(e)
-         }
+        }
     }
 }
