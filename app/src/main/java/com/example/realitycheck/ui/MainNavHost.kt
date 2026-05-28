@@ -23,6 +23,7 @@ import com.example.realitycheck.ui.badges.BadgesScreen
 import com.example.realitycheck.ui.game.GameMode
 import com.example.realitycheck.ui.game.GameScreen
 import com.example.realitycheck.ui.game.GameViewModel
+import com.example.realitycheck.ui.game.SpeedRunViewModel
 import com.example.realitycheck.ui.home.HomeScreen
 import com.example.realitycheck.ui.home.HomeViewModel
 import com.example.realitycheck.ui.onboarding.OnboardingScreen
@@ -103,6 +104,7 @@ fun MainNavHost() {
                         val route = when (mode) {
                             GameMode.IMAGE -> "game/image"
                             GameMode.TEXT -> "game/text"
+                            GameMode.SPEED -> "game/speed"
                         }
                         navController.navigate(route)
                     }
@@ -137,9 +139,42 @@ fun MainNavHost() {
                     gameViewModel.setMode(gameMode)
                 }
 
+                val state by gameViewModel.uiState.collectAsState()
+                val streak by gameViewModel.currentStreak.collectAsState()
+
                 GameScreen(
-                    viewModel = gameViewModel,
-                    onGameOver = { navController.popBackStack() }
+                    uiState = state,
+                    streak = streak,
+                    timeRemainingSeconds = null,
+                    onSelect = { gameViewModel.onSelect(it) },
+                    onBothAnswer = { gameViewModel.onBothAnswer(it) },
+                    onGameOverDismissed = { navController.popBackStack() }
+                )
+            }
+
+            composable("game/speed") {
+                val speedRunViewModel: SpeedRunViewModel = viewModel(
+                    factory = object : ViewModelProvider.Factory {
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                            return SpeedRunViewModel(SupabaseModule.profileRepository) as T
+                        }
+                    }
+                )
+
+                val state by speedRunViewModel.uiState.collectAsState()
+                val correctCount by speedRunViewModel.currentCorrectCount.collectAsState()
+
+                GameScreen(
+                    uiState = state,
+                    streak = correctCount,
+                    timeRemainingSeconds = state.timeRemainingSeconds,
+                    scoreLabel = "correct",
+                    onSelect = { speedRunViewModel.onSelect(it) },
+                    onBothAnswer = { speedRunViewModel.onBothAnswer(it) },
+                    onGameOverDismissed = {
+                        speedRunViewModel.onGameOverDismissed()
+                        navController.popBackStack()
+                    }
                 )
             }
         }

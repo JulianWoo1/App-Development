@@ -113,6 +113,17 @@ fun HomeScreen(
                     badgeColor = ButtonPurple,
                     onClick = { onStartGame(GameMode.TEXT) }
                 )
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                GameModeCard(
+                    icon = "\u26A1", // lightning emoji
+                    title = "Speed Run",
+                    subtitle = "Answer as many as you can in 60s",
+                    badge = null,
+                    badgeColor = null,
+                    onClick = { onStartGame(GameMode.SPEED) }
+                )
             }
         }
     }
@@ -283,8 +294,8 @@ private fun GameModeCard(
     icon: String,
     title: String,
     subtitle: String,
-    badge: String,
-    badgeColor: Color,
+    badge: String?,
+    badgeColor: Color?,
     onClick: () -> Unit
 ) {
     Card(
@@ -336,20 +347,21 @@ private fun GameModeCard(
                 )
             }
 
-            // Badge
-            Box(
-                modifier = Modifier
-                    .background(
-                        badgeColor.copy(alpha = 0.15f),
-                        RoundedCornerShape(12.dp)
+            if (badge != null && badgeColor != null) {
+                Box(
+                    modifier = Modifier
+                        .background(
+                            badgeColor.copy(alpha = 0.15f),
+                            RoundedCornerShape(12.dp)
+                        )
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = badge,
+                        color = badgeColor,
+                        style = MaterialTheme.typography.labelMedium
                     )
-                    .padding(horizontal = 12.dp, vertical = 6.dp)
-            ) {
-                Text(
-                    text = badge,
-                    color = badgeColor,
-                    style = MaterialTheme.typography.labelMedium
-                )
+                }
             }
 
             Spacer(modifier = Modifier.width(12.dp))
