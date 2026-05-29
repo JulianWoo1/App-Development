@@ -287,13 +287,13 @@ fun ProfileScreen()
                     verticalAlignment = Alignment.Bottom
                 ) {
 
-                    ActivityBar(40.dp, "Ma", false)
-                    ActivityBar(62.dp, "Di", false)
-                    ActivityBar(28.dp, "Wo", false)
-                    ActivityBar(78.dp, "Do", false)
-                    ActivityBar(50.dp, "Vr", false)
-                    ActivityBar(70.dp, "Za", false)
-                    ActivityBar(58.dp, "Zo", true)
+                    ActivityBar(40.dp, "Mon", false)
+                    ActivityBar(62.dp, "Tue", false)
+                    ActivityBar(28.dp, "Wed", false)
+                    ActivityBar(78.dp, "Thu", false)
+                    ActivityBar(50.dp, "Fri", false)
+                    ActivityBar(70.dp, "Sat", false)
+                    ActivityBar(58.dp, "Sun", true)
                 }
             }
 
