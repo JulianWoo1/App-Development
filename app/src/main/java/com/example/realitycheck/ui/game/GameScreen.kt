@@ -144,20 +144,6 @@ fun GameScreen(
                 )
             }
         }
-
-        // -------- GAME OVER --------
-        if (uiState.isGameOver) {
-            AlertDialog(
-                onDismissRequest = {},
-                title = { Text("You're out!") },
-                text = { Text("Your $scoreLabel: $streak") },
-                confirmButton = {
-                    TextButton(onClick = onGameOverDismissed) {
-                        Text("OK")
-                    }
-                }
-            )
-        }
     }
 }
 

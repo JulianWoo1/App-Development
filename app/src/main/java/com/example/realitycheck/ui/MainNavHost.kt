@@ -24,6 +24,7 @@ import com.example.realitycheck.ui.game.GameMode
 import com.example.realitycheck.ui.game.GameScreen
 import com.example.realitycheck.ui.game.GameViewModel
 import com.example.realitycheck.ui.game.SpeedRunViewModel
+import com.example.realitycheck.ui.gameover.GameOverScreen
 import com.example.realitycheck.ui.home.HomeScreen
 import com.example.realitycheck.ui.home.HomeViewModel
 import com.example.realitycheck.ui.onboarding.OnboardingScreen
@@ -140,6 +141,15 @@ fun MainNavHost() {
                 }
 
                 val state by gameViewModel.uiState.collectAsState()
+
+                LaunchedEffect(state.isGameOver) {
+                    if (state.isGameOver) {
+                        navController.navigate("gameover") {
+                            popUpTo("game/image") { inclusive = true }
+                        }
+                    }
+                }
+
                 val streak by gameViewModel.currentStreak.collectAsState()
 
                 GameScreen(
@@ -162,6 +172,15 @@ fun MainNavHost() {
                 )
 
                 val state by speedRunViewModel.uiState.collectAsState()
+
+                LaunchedEffect(state.isGameOver) {
+                    if (state.isGameOver) {
+                        navController.navigate("gameover") {
+                            popUpTo("game/image") { inclusive = true }
+                        }
+                    }
+                }
+
                 val correctCount by speedRunViewModel.currentCorrectCount.collectAsState()
 
                 GameScreen(
@@ -174,6 +193,28 @@ fun MainNavHost() {
                     onGameOverDismissed = {
                         speedRunViewModel.onGameOverDismissed()
                         navController.popBackStack()
+                    }
+                )
+            }
+            composable("gameover") {
+                GameOverScreen(
+                    score = "0", // temporary, we’ll fix this in step 4
+                    accuracy = "74%",
+                    fastestTime = "1.4s",
+                    bestRank = "#18",
+                    level = 23,
+                    currentXp = 2820,
+                    maxXp = 5000,
+                    gainedXp = 230,
+                    onPlayAgain = {
+                        navController.navigate("home") {
+                            popUpTo("gameover") { inclusive = true }
+                        }
+                    },
+                    onHome = {
+                        navController.navigate("home") {
+                            popUpTo("gameover") { inclusive = true }
+                        }
                     }
                 )
             }
