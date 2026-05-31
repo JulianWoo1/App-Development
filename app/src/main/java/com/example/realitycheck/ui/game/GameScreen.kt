@@ -18,14 +18,16 @@ import com.example.realitycheck.di.ImageLoaderFactory
 
 @Composable
 fun GameScreen(
-    viewModel: GameViewModel,
-    onGameOver: () -> Unit
+    uiState: GameUiState,
+    streak: Int,
+    timeRemainingSeconds: Int?,
+    scoreLabel: String = "streak",
+    onSelect: (isTop: Boolean) -> Unit,
+    onBothAnswer: (guessedAi: Boolean) -> Unit,
+    onGameOverDismissed: () -> Unit
 ) {
     val context = LocalContext.current
     val imageLoader = remember { ImageLoaderFactory.create(context) }
-
-    val state by viewModel.uiState.collectAsState()
-    val streak by viewModel.currentStreak.collectAsState()
 
     Box(
         modifier = Modifier
@@ -33,7 +35,7 @@ fun GameScreen(
             .background(Color(0xFF1a1a2e))
     ) {
 
-        if (!state.isGameOver) {
+        if (!uiState.isGameOver) {
 
             Column(modifier = Modifier.fillMaxSize()) {
 
@@ -41,23 +43,23 @@ fun GameScreen(
                 Column(modifier = Modifier.weight(1f)) {
 
                     GameContentBox(
-                        content = state.topContent,
-                        isImage = state.isImageMode,
-                        onClick = { viewModel.onSelect(true) },
-                        enabled = !state.isLoading && !state.showOverlay,
-                        showOverlay = state.showOverlay && state.tappedTop != false,
-                        isCorrect = state.lastResultCorrect,
+                        content = uiState.topContent,
+                        isImage = uiState.isImageMode,
+                        onClick = { onSelect(true) },
+                        enabled = !uiState.isLoading && !uiState.showOverlay,
+                        showOverlay = uiState.showOverlay && uiState.tappedTop != false,
+                        isCorrect = uiState.lastResultCorrect,
                         modifier = Modifier.weight(1f),
                         imageLoader = imageLoader
                     )
 
                     GameContentBox(
-                        content = state.bottomContent,
-                        isImage = state.isImageMode,
-                        onClick = { viewModel.onSelect(false) },
-                        enabled = !state.isLoading && !state.showOverlay,
-                        showOverlay = state.showOverlay && state.tappedTop != true,
-                        isCorrect = state.lastResultCorrect,
+                        content = uiState.bottomContent,
+                        isImage = uiState.isImageMode,
+                        onClick = { onSelect(false) },
+                        enabled = !uiState.isLoading && !uiState.showOverlay,
+                        showOverlay = uiState.showOverlay && uiState.tappedTop != true,
+                        isCorrect = uiState.lastResultCorrect,
                         modifier = Modifier.weight(1f),
                         imageLoader = imageLoader
                     )
@@ -71,8 +73,8 @@ fun GameScreen(
                 ) {
 
                     Button(
-                        onClick = { viewModel.onBothAnswer(true) },
-                        enabled = !state.isLoading && !state.showOverlay,
+                        onClick = { onBothAnswer(true) },
+                        enabled = !uiState.isLoading && !uiState.showOverlay,
                         modifier = Modifier.weight(1f)
                     ) {
                         Text("Both AI")
@@ -81,8 +83,8 @@ fun GameScreen(
                     Spacer(modifier = Modifier.width(8.dp))
 
                     Button(
-                        onClick = { viewModel.onBothAnswer(false) },
-                        enabled = !state.isLoading && !state.showOverlay,
+                        onClick = { onBothAnswer(false) },
+                        enabled = !uiState.isLoading && !uiState.showOverlay,
                         modifier = Modifier.weight(1f)
                     ) {
                         Text("Both Real")
@@ -90,15 +92,49 @@ fun GameScreen(
                 }
             }
 
-            // -------- STREAK --------
-            Text(
-                text = streak.toString(),
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 32.dp),
-                style = MaterialTheme.typography.displayMedium,
-                color = Color.White
-            )
+            // -------- TIMER / STREAK --------
+            if (timeRemainingSeconds != null) {
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 32.dp),
+                    horizontalArrangement = Arrangement.spacedBy(32.dp)
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = timeRemainingSeconds.toString(),
+                            style = MaterialTheme.typography.displayMedium,
+                            color = Color.White
+                        )
+                        Text(
+                            text = "time",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.6f)
+                        )
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = streak.toString(),
+                            style = MaterialTheme.typography.displayMedium,
+                            color = Color.White
+                        )
+                        Text(
+                            text = scoreLabel,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.6f)
+                        )
+                    }
+                }
+            } else {
+                Text(
+                    text = streak.toString(),
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 32.dp),
+                    style = MaterialTheme.typography.displayMedium,
+                    color = Color.White
+                )
+            }
 
             // xp earned
             if (state.earnedXp > 0) {
@@ -112,26 +148,12 @@ fun GameScreen(
             }
 
             // -------- LOADING --------
-            if (state.isLoading) {
+            if (uiState.isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.align(Alignment.Center),
                     color = Color.White
                 )
             }
-        }
-
-        // -------- GAME OVER --------
-        if (state.isGameOver) {
-            AlertDialog(
-                onDismissRequest = {},
-                title = { Text("You're out!") },
-                text = { Text("Your streak: $streak") },
-                confirmButton = {
-                    TextButton(onClick = onGameOver) {
-                        Text("OK")
-                    }
-                }
-            )
         }
     }
 }

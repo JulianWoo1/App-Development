@@ -14,10 +14,12 @@ import androidx.compose.ui.unit.sp
 import com.example.realitycheck.ui.components.XpProgressBar
 import com.example.realitycheck.ui.game.GameMode
 
-private val BgDeep      = Color(0xFF050505)
-private val CardBg      = Color(0xFF0D0D0D)
+private val BgDeep = Color(0xFF050505)
+private val CardBg = Color(0xFF0D0D0D)
 private val ButtonPurple = Color(0xFF5B2EFF)
-private val TextMuted   = Color(0xFFA0A0A0)
+private val TextMuted = Color(0xFFA0A0A0)
+private val WelcomeGray = Color(0xFFB0B0B0)
+private val SubtitleGray = Color(0xFF9A9A9A)
 
 @Composable
 fun HomeScreen(
@@ -34,39 +36,39 @@ fun HomeScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        // ── Header ──────────────────────────────────────────────────────────
         Text(
-            text = "RealityCheck",
+            text = state.displayName,
             color = Color.White,
             fontSize = 28.sp,
             fontWeight = FontWeight.ExtraBold
         )
 
         Text(
-            text = "Kun jij echt van AI onderscheiden?",
-            color = TextMuted,
-            fontSize = 13.sp,
-            modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
+            text = "Can you differentiate real from AI?",
+            color = SubtitleGray,
+            fontSize = 14.sp,
+            modifier = Modifier.padding(top = 6.dp)
         )
 
-        // ── XP Progress card ─────────────────────────────────────────────────
         Card(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 24.dp),
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(containerColor = CardBg)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
+
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
                         text = state.profile?.username ?: "Speler",
                         color = Color.White,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 16.sp
+                        fontWeight = FontWeight.SemiBold
                     )
+
                     Text(
                         text = "Beste streak: ${state.profile?.highScoreStreak ?: 0}",
                         color = TextMuted,
@@ -78,9 +80,10 @@ fun HomeScreen(
 
                 if (state.isLoading) {
                     LinearProgressIndicator(
-                        modifier = Modifier.fillMaxWidth().height(12.dp),
-                        color = ButtonPurple,
-                        trackColor = Color(0xFF1F1F2E)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(10.dp),
+                        color = ButtonPurple
                     )
                 } else {
                     XpProgressBar(
@@ -91,44 +94,67 @@ fun HomeScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(28.dp))
 
-        // ── Mode selection ───────────────────────────────────────────────────
         Text(
-            text = "Kies een modus",
-            color = TextMuted,
-            fontSize = 13.sp,
+            text = "SPELMODI",
+            color = WelcomeGray,
+            fontSize = 12.sp,
             modifier = Modifier
                 .align(Alignment.Start)
                 .padding(bottom = 12.dp)
         )
 
-        GameModeButton(
-            label = "📷  Afbeeldingen",
-            description = "Echt of AI-gegenereerd?",
+        GameModeCard(
+            icon = "\uD83D\uDDBC️",
+            title = "Image Mode",
+            subtitle = "The classic mode",
+            badge = "Popular",
+            badgeColor = Color(0xFF1DB954),
             onClick = { onStartGame(GameMode.IMAGE) }
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        GameModeButton(
-            label = "💬  Tekst",
-            description = "Menselijk of machinaal?",
+        GameModeCard(
+            icon = "\u270D️",
+            title = "Text Mode",
+            subtitle = "Detect AI-written text",
+            badge = "New",
+            badgeColor = ButtonPurple,
             onClick = { onStartGame(GameMode.TEXT) }
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        GameModeCard(
+            icon = "\u26A1",
+            title = "Speed Run",
+            subtitle = "Answer as many as you can in 60s",
+            badge = null,
+            badgeColor = null,
+            onClick = { onStartGame(GameMode.SPEED) }
         )
 
         Spacer(modifier = Modifier.weight(1f))
 
         state.error?.let {
-            Text(text = it, color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
+            Text(
+                text = it,
+                color = MaterialTheme.colorScheme.error,
+                fontSize = 12.sp
+            )
         }
     }
 }
 
 @Composable
-private fun GameModeButton(
-    label: String,
-    description: String,
+private fun GameModeCard(
+    icon: String,
+    title: String,
+    subtitle: String,
+    badge: String?,
+    badgeColor: Color?,
     onClick: () -> Unit
 ) {
     Button(
@@ -139,9 +165,62 @@ private fun GameModeButton(
         shape = RoundedCornerShape(16.dp),
         colors = ButtonDefaults.buttonColors(containerColor = ButtonPurple)
     ) {
-        Column(horizontalAlignment = Alignment.Start, modifier = Modifier.fillMaxWidth()) {
-            Text(label, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
-            Text(description, fontSize = 11.sp, color = Color.White.copy(alpha = 0.7f))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(Color(0xFF161616), RoundedCornerShape(14.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(text = icon)
+            }
+
+            Spacer(modifier = Modifier.width(14.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    color = Color.White,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                Text(
+                    text = subtitle,
+                    color = WelcomeGray,
+                    fontSize = 12.sp
+                )
+            }
+
+            if (badge != null && badgeColor != null) {
+                Box(
+                    modifier = Modifier
+                        .background(
+                            badgeColor.copy(alpha = 0.15f),
+                            RoundedCornerShape(10.dp)
+                        )
+                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = badge,
+                        color = badgeColor,
+                        fontSize = 11.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(10.dp))
+            }
+
+            Text(
+                text = "›",
+                color = WelcomeGray,
+                fontSize = 22.sp
+            )
         }
     }
 }
