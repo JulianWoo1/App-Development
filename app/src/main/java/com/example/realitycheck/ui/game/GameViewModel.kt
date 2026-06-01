@@ -15,7 +15,8 @@ import kotlin.random.Random
 enum class GameMode {
     IMAGE,
     TEXT,
-    SPEED
+    SPEED,
+    SURVIVAL
 }
 
 enum class RoundType {
@@ -92,6 +93,7 @@ class GameViewModel(
             GameMode.IMAGE -> loadImageRound()
             GameMode.TEXT -> loadTextRound()
             GameMode.SPEED -> { }
+            GameMode.SURVIVAL -> { }
         }
     }
 

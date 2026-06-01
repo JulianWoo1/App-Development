@@ -124,6 +124,17 @@ fun HomeScreen(
                     badgeColor = null,
                     onClick = { onStartGame(GameMode.SPEED) }
                 )
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                GameModeCard(
+                    icon = "❤️",
+                    title = "Survival Mode",
+                    subtitle = "3 lives. No timer. Stay alive.",
+                    badge = "Hard",
+                    badgeColor = Color(0xFFE53935),
+                    onClick = { onStartGame(GameMode.SURVIVAL) }
+                )
             }
         }
     }

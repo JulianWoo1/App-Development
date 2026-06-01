@@ -24,6 +24,7 @@ import com.example.realitycheck.ui.game.GameMode
 import com.example.realitycheck.ui.game.GameScreen
 import com.example.realitycheck.ui.game.GameViewModel
 import com.example.realitycheck.ui.game.SpeedRunViewModel
+import com.example.realitycheck.ui.game.SurvivalViewModel
 import com.example.realitycheck.ui.gameover.GameOverScreen
 import com.example.realitycheck.ui.home.HomeScreen
 import com.example.realitycheck.ui.home.HomeViewModel
@@ -49,6 +50,7 @@ private val bottomNavItemsList = listOf(
 @Composable
 fun MainNavHost() {
     val navController = rememberNavController()
+    var lastGameRoute by remember { mutableStateOf("game/image") }
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
@@ -106,7 +108,11 @@ fun MainNavHost() {
                             GameMode.IMAGE -> "game/image"
                             GameMode.TEXT -> "game/text"
                             GameMode.SPEED -> "game/speed"
+                            GameMode.SURVIVAL -> "game/survival"
                         }
+
+
+                        lastGameRoute = route
                         navController.navigate(route)
                     }
                 )
@@ -196,9 +202,44 @@ fun MainNavHost() {
                     }
                 )
             }
+            composable("game/survival") {
+
+                val survivalViewModel: SurvivalViewModel = viewModel(
+                    factory = object : ViewModelProvider.Factory {
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                            return SurvivalViewModel(SupabaseModule.profileRepository) as T
+                        }
+                    }
+                )
+
+                val state by survivalViewModel.uiState.collectAsState()
+                val score by survivalViewModel.currentScore.collectAsState()
+                val lives by survivalViewModel.currentLives.collectAsState()
+
+                LaunchedEffect(state.isGameOver) {
+                    if (state.isGameOver) {
+                        navController.navigate("gameover") {
+                            popUpTo("game/image") { inclusive = true }
+                        }
+                    }
+                }
+
+                GameScreen(
+                    uiState = state,
+                    streak = score,
+                    timeRemainingSeconds = null,
+                    scoreLabel = "score",
+                    onSelect = { survivalViewModel.onSelect(it) },
+                    onBothAnswer = { survivalViewModel.onBothAnswer(it) },
+                    onGameOverDismissed = {
+                        survivalViewModel.onGameOverDismissed()
+                        navController.popBackStack()
+                    }
+                )
+            }
             composable("gameover") {
                 GameOverScreen(
-                    score = "0", // temporary, we’ll fix this in step 4
+                    score = "0",
                     accuracy = "74%",
                     fastestTime = "1.4s",
                     bestRank = "#18",
@@ -207,7 +248,7 @@ fun MainNavHost() {
                     maxXp = 5000,
                     gainedXp = 230,
                     onPlayAgain = {
-                        navController.navigate("home") {
+                        navController.navigate(lastGameRoute) {
                             popUpTo("gameover") { inclusive = true }
                         }
                     },
