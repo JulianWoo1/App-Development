@@ -2,6 +2,7 @@ package com.example.realitycheck.ui.game
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.realitycheck.data.repository.ContentRepository
 import com.example.realitycheck.data.repository.ProfileRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -52,6 +53,7 @@ data class GameUiState(
 // ---------------- VIEWMODEL ----------------
 class GameViewModel(
     private val profileRepository: ProfileRepository,
+    private val contentRepository: ContentRepository,
     private val onXpUpdated: () -> Unit = {}
 ) : ViewModel() {
 
@@ -88,12 +90,86 @@ class GameViewModel(
         when (_uiState.value.mode) {
             GameMode.IMAGE -> loadImageRound()
             GameMode.TEXT  -> loadTextRound()
-            GameMode.SPEED -> loadImageRound() // speed uses images
+            GameMode.SPEED -> loadImageRound()
         }
     }
 
     private fun loadImageRound() {
-        val id   = (1..MAX_IMAGE_ID).random()
+        _uiState.value = _uiState.value.copy(isLoading = true)
+
+        viewModelScope.launch {
+            contentRepository.getNextPair().fold(
+                onSuccess = { (first, second) ->
+                    val type = RoundType.entries.random()
+
+                    when (type) {
+                        RoundType.ONE_REAL -> {
+                            // Ensure one is AI and one is real; if both same type fall back
+                            val (realItem, aiItem) = if (!first.isAi && second.isAi) {
+                                first to second
+                            } else if (first.isAi && !second.isAi) {
+                                second to first
+                            } else {
+                                // Both same — treat as BOTH_AI or BOTH_REAL
+                                val bothAi = first.isAi
+                                val topUrl = first.contentUrl ?: ""
+                                val botUrl = second.contentUrl ?: ""
+                                _uiState.value = _uiState.value.copy(
+                                    topContent    = topUrl,
+                                    bottomContent = botUrl,
+                                    isImageMode   = true,
+                                    roundType     = if (bothAi) RoundType.BOTH_AI else RoundType.BOTH_REAL,
+                                    isLoading     = false,
+                                    showOverlay   = false
+                                )
+                                return@fold
+                            }
+                            val topIsReal = Random.nextBoolean()
+                            _uiState.value = _uiState.value.copy(
+                                topContent    = if (topIsReal) realItem.contentUrl else aiItem.contentUrl,
+                                bottomContent = if (topIsReal) aiItem.contentUrl else realItem.contentUrl,
+                                isCorrectTop  = topIsReal,
+                                isImageMode   = true,
+                                roundType     = RoundType.ONE_REAL,
+                                isLoading     = false,
+                                showOverlay   = false
+                            )
+                        }
+
+                        RoundType.BOTH_AI -> {
+                            _uiState.value = _uiState.value.copy(
+                                topContent    = first.contentUrl,
+                                bottomContent = second.contentUrl,
+                                isImageMode   = true,
+                                roundType     = RoundType.BOTH_AI,
+                                isLoading     = false,
+                                showOverlay   = false
+                            )
+                        }
+
+                        RoundType.BOTH_REAL -> {
+                            _uiState.value = _uiState.value.copy(
+                                topContent    = first.contentUrl,
+                                bottomContent = second.contentUrl,
+                                isImageMode   = true,
+                                roundType     = RoundType.BOTH_REAL,
+                                isLoading     = false,
+                                showOverlay   = false
+                            )
+                        }
+                    }
+                },
+                onFailure = {
+                    // Fallback to URL construction if repository fails
+                    loadImageRoundFallback()
+                }
+            )
+        }
+    }
+
+    /** Fallback for when the content repository is unavailable. */
+    private fun loadImageRoundFallback() {
+        val id    = (1..MAX_IMAGE_ID).random()
         val real1 = "$BASE_URL/Real/$id.jpg"
         val real2 = "$BASE_URL/Real/${id + 1}.jpg"
         val ai1   = "$BASE_URL/AI/$id.jpg"
@@ -176,11 +252,8 @@ class GameViewModel(
 
     private fun handleResult(correct: Boolean, tappedTop: Boolean?) {
         _uiState.value = _uiState.value.copy(
-            showOverlay       = true,
-            lastResultCorrect = correct,
-            tappedTop         = tappedTop
+            showOverlay = true, lastResultCorrect = correct, tappedTop = tappedTop
         )
-
         viewModelScope.launch {
             delay(1000)
             if (correct) {

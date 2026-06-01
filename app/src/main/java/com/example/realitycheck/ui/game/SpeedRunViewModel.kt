@@ -2,6 +2,7 @@ package com.example.realitycheck.ui.game
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.realitycheck.data.repository.ContentRepository
 import com.example.realitycheck.data.repository.ProfileRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -13,10 +14,10 @@ import kotlinx.coroutines.launch
 import kotlin.random.Random
 
 class SpeedRunViewModel(
-    private val profileRepository: ProfileRepository
+    private val profileRepository: ProfileRepository,
+    private val contentRepository: ContentRepository
 ) : ViewModel() {
 
-    // timeRemainingSeconds lives in GameUiState now
     private val _uiState = MutableStateFlow(
         GameUiState(mode = GameMode.SPEED, timeRemainingSeconds = 60)
     )
@@ -48,35 +49,44 @@ class SpeedRunViewModel(
 
     fun loadNextRound() {
         if (_uiState.value.isGameOver) return
-        val id    = (1..MAX_IMAGE_ID).random()
-        val real1 = "$BASE_URL/Real/$id.jpg"
-        val real2 = "$BASE_URL/Real/${id + 1}.jpg"
-        val ai1   = "$BASE_URL/AI/$id.jpg"
-        val ai2   = "$BASE_URL/AI/${id + 1}.jpg"
-        val type  = RoundType.entries.random()
+        _uiState.value = _uiState.value.copy(isLoading = true)
 
-        when (type) {
-            RoundType.ONE_REAL -> {
-                val topIsReal = Random.nextBoolean()
-                _uiState.value = _uiState.value.copy(
-                    topContent    = if (topIsReal) real1 else ai1,
-                    bottomContent = if (topIsReal) ai1 else real1,
-                    isCorrectTop  = topIsReal,
-                    isImageMode   = true, roundType = type,
-                    isLoading = false, showOverlay = false
-                )
-            }
-            RoundType.BOTH_AI -> _uiState.value = _uiState.value.copy(
-                topContent = ai1, bottomContent = ai2,
-                isImageMode = true, roundType = type,
-                isLoading = false, showOverlay = false
-            )
-            RoundType.BOTH_REAL -> _uiState.value = _uiState.value.copy(
-                topContent = real1, bottomContent = real2,
-                isImageMode = true, roundType = type,
-                isLoading = false, showOverlay = false
+        viewModelScope.launch {
+            contentRepository.getNextPair().fold(
+                onSuccess = { (first, second) ->
+                    val topIsReal = Random.nextBoolean()
+                    val (realItem, aiItem) = if (!first.isAi) first to second else second to first
+
+                    _uiState.value = _uiState.value.copy(
+                        topContent    = if (topIsReal) realItem.contentUrl else aiItem.contentUrl,
+                        bottomContent = if (topIsReal) aiItem.contentUrl else realItem.contentUrl,
+                        isCorrectTop  = topIsReal,
+                        isImageMode   = true,
+                        roundType     = RoundType.ONE_REAL,
+                        isLoading     = false,
+                        showOverlay   = false
+                    )
+                },
+                onFailure = { loadNextRoundFallback() }
             )
         }
+    }
+
+    private fun loadNextRoundFallback() {
+        val id    = (1..MAX_IMAGE_ID).random()
+        val real1 = "$BASE_URL/Real/$id.jpg"
+        val ai1   = "$BASE_URL/AI/$id.jpg"
+        val topIsReal = Random.nextBoolean()
+
+        _uiState.value = _uiState.value.copy(
+            topContent    = if (topIsReal) real1 else ai1,
+            bottomContent = if (topIsReal) ai1 else real1,
+            isCorrectTop  = topIsReal,
+            isImageMode   = true,
+            roundType     = RoundType.ONE_REAL,
+            isLoading     = false,
+            showOverlay   = false
+        )
     }
 
     fun onSelect(isTop: Boolean) {
@@ -104,7 +114,7 @@ class SpeedRunViewModel(
             showOverlay = true, lastResultCorrect = correct, tappedTop = tappedTop
         )
         viewModelScope.launch {
-            delay(600) // shorter delay for speed mode
+            delay(600)
             if (correct) _correctCount.value++
             loadNextRound()
         }
