@@ -207,7 +207,7 @@ fun MainNavHost() {
                 )
             }
 
-=            composable("gameover") {
+            composable("gameover") {
 
                 GameOverScreen(
                     score = GameResultHolder.score,

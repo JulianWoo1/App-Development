@@ -14,10 +14,16 @@ data class HomeUiState(
     val profile: Profile? = null,
     val isLoading: Boolean = true,
     val error: String? = null,
-    // Derived level fields — computed from profile.totalXp
+    // Display
+    val displayName: String = "Speler",
+    // Level / XP
     val level: Int = 1,
+    val xpInCurrentLevel: Int = 0,
+    val xpForNextLevel: Int = 100,
     val xpFraction: Float = 0f,
-    val xpToNextLevel: Int = 100
+    val xpToNextLevel: Int = 100,
+    // Stats
+    val highScoreStreak: Int = 0
 )
 
 class HomeViewModel(
@@ -37,19 +43,27 @@ class HomeViewModel(
 
             profileRepository.getCurrentUserProfile().fold(
                 onSuccess = { profile ->
-                    val xp = profile.totalXp
+                    val xp      = profile.totalXp
+                    val level   = LevelSystem.levelFromXp(xp)
+                    val current = LevelSystem.xpForLevel(level)
+                    val next    = LevelSystem.xpForLevel(level + 1)
+
                     _uiState.value = _uiState.value.copy(
-                        profile = profile,
-                        isLoading = false,
-                        level = LevelSystem.levelFromXp(xp),
-                        xpFraction = LevelSystem.progressFraction(xp),
-                        xpToNextLevel = LevelSystem.xpToNextLevel(xp)
+                        profile          = profile,
+                        isLoading        = false,
+                        displayName      = profile.username ?: "Speler",
+                        level            = level,
+                        xpInCurrentLevel = xp - current,
+                        xpForNextLevel   = next - current,
+                        xpFraction       = LevelSystem.progressFraction(xp),
+                        xpToNextLevel    = LevelSystem.xpToNextLevel(xp),
+                        highScoreStreak  = profile.highScoreStreak
                     )
                 },
                 onFailure = { e ->
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        error = e.message
+                        error     = e.message
                     )
                 }
             )

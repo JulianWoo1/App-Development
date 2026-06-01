@@ -12,7 +12,11 @@ import kotlinx.coroutines.launch
 data class ProfileUiState(
     val profile: Profile? = null,
     val isLoading: Boolean = true,
-    val error: String? = null
+    val error: String? = null,
+    // Placeholder stats — wire up to real data when available
+    val gamesPlayed: Int = 0,
+    val winRate: Int = 0,
+    val badges: Int = 0
 )
 
 class ProfileViewModel(
@@ -22,19 +26,20 @@ class ProfileViewModel(
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
-    init {
-        loadProfile()
-    }
+    init { loadProfile() }
 
     fun loadProfile() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             profileRepository.getCurrentUserProfile().fold(
                 onSuccess = { profile ->
-                    _uiState.value = ProfileUiState(profile = profile, isLoading = false)
+                    _uiState.value = _uiState.value.copy(
+                        profile   = profile,
+                        isLoading = false
+                    )
                 },
                 onFailure = { e ->
-                    _uiState.value = ProfileUiState(isLoading = false, error = e.message)
+                    _uiState.value = _uiState.value.copy(isLoading = false, error = e.message)
                 }
             )
         }
