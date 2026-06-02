@@ -36,6 +36,7 @@ fun LoginScreen(onNavigateToRegister: () -> Unit) {
     )
     
     val authState by viewModel.authState.collectAsState()
+    val passwordResetState by viewModel.passwordResetState.collectAsState()
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
 
@@ -43,6 +44,18 @@ fun LoginScreen(onNavigateToRegister: () -> Unit) {
         when (val state = authState) {
             is AuthState.Success -> navigateToMain(context)
             is AuthState.Error -> Toast.makeText(context, state.message, Toast.LENGTH_SHORT).show()
+            else -> {}
+        }
+    }
+
+    LaunchedEffect(passwordResetState) {
+        when (val state = passwordResetState) {
+            is PasswordResetState.Success -> {
+                Toast.makeText(context, "Reset email sent if account exists", Toast.LENGTH_SHORT).show()
+            }
+            is PasswordResetState.Error -> {
+                Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
+            }
             else -> {}
         }
     }
@@ -91,7 +104,6 @@ fun LoginScreen(onNavigateToRegister: () -> Unit) {
                         return@clickable
                     }
                     viewModel.resetPassword(email)
-                    Toast.makeText(context, "Reset email sent if account exists", Toast.LENGTH_SHORT).show()
                 }
         )
 

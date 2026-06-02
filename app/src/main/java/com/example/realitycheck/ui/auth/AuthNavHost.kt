@@ -12,13 +12,17 @@ object LoginRoute
 @Serializable
 object RegisterRoute
 
+@Serializable
+object SetNewPasswordRoute
+
 @Composable
-fun AuthNavHost() {
+fun AuthNavHost(isPasswordResetFlow: Boolean = false) {
     val navController = rememberNavController()
+    val startDestination = if (isPasswordResetFlow) SetNewPasswordRoute else LoginRoute
 
     NavHost(
         navController = navController,
-        startDestination = LoginRoute
+        startDestination = startDestination
     ) {
         composable<LoginRoute> {
             LoginScreen(
@@ -31,6 +35,15 @@ fun AuthNavHost() {
             RegisterScreen(
                 onNavigateToLogin = {
                     navController.popBackStack()
+                }
+            )
+        }
+        composable<SetNewPasswordRoute> {
+            SetNewPasswordScreen(
+                onPasswordResetSuccess = {
+                    navController.navigate(LoginRoute) {
+                        popUpTo(SetNewPasswordRoute) { inclusive = true }
+                    }
                 }
             )
         }

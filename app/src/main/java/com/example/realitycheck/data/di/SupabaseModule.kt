@@ -14,7 +14,10 @@ object SupabaseModule {
         supabaseKey = BuildConfig.SUPABASE_ANON_KEY
     ) {
         install(Postgrest)
-        install(Auth)
+        install(Auth) {
+            scheme = "com.example.realitycheck"
+            host = "reset-password"
+        }
     }
 
     val authRepository: AuthRepository by lazy {

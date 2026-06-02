@@ -42,7 +42,21 @@ class SupabaseAuthRepository(private val supabaseClient: SupabaseClient) : AuthR
 
     override suspend fun resetPassword(email: String): Result<Unit> {
         return try {
-            supabaseClient.auth.resetPasswordForEmail(email)
+            supabaseClient.auth.resetPasswordForEmail(
+                email,
+                redirectUrl = "com.example.realitycheck://reset-password"
+            )
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun updatePassword(newPassword: String): Result<Unit> {
+        return try {
+            supabaseClient.auth.modifyUser {
+                password = newPassword
+            }
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
