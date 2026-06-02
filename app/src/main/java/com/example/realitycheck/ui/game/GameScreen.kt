@@ -8,15 +8,18 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.realitycheck.di.ImageLoaderFactory
+
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ZoomOutMap
+import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.graphicsLayer
 
 private val Purple    = Color(0xFF5B2EFF)
 private val DarkBg    = Color(0xFF1a1a2e)
@@ -34,95 +37,82 @@ fun GameScreen(
     onBothAnswer: (guessedAi: Boolean) -> Unit,
     onGameOverDismissed: () -> Unit,
 ) {
-    val context     = LocalContext.current
+    val context = LocalContext.current
     val imageLoader = remember { ImageLoaderFactory.create(context) }
+
+    var fullscreenImage by remember { mutableStateOf<String?>(null) }
+
+    // zoom state
+    var scale by remember { mutableStateOf(1f) }
+    var offsetX by remember { mutableStateOf(0f) }
+    var offsetY by remember { mutableStateOf(0f) }
+
+    // reset zoom when opening image
+    LaunchedEffect(fullscreenImage) {
+        scale = 1f
+        offsetX = 0f
+        offsetY = 0f
+    }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(DarkBg)
     ) {
+
+        // ───────────────────────────── GAME ─────────────────────────────
         if (!uiState.isGameOver) {
             Column(modifier = Modifier.fillMaxSize()) {
 
-                // ── Content panels ───────────────────────────────────────────
                 Column(modifier = Modifier.weight(1f)) {
+
                     GameContentBox(
-                        content     = uiState.topContent,
-                        isImage     = uiState.isImageMode,
-                        onClick     = { onSelect(true) },
-                        enabled     = !uiState.isLoading && !uiState.showOverlay,
+                        content = uiState.topContent,
+                        isImage = uiState.isImageMode,
+                        onClick = { onSelect(true) },
+                        onImageClick = { fullscreenImage = it },
+                        enabled = !uiState.isLoading && !uiState.showOverlay,
                         showOverlay = uiState.showOverlay && uiState.tappedTop != false,
-                        isCorrect   = uiState.lastResultCorrect,
-                        modifier    = Modifier.weight(1f),
+                        isCorrect = uiState.lastResultCorrect,
+                        modifier = Modifier.weight(1f),
                         imageLoader = imageLoader
                     )
+
                     GameContentBox(
-                        content     = uiState.bottomContent,
-                        isImage     = uiState.isImageMode,
-                        onClick     = { onSelect(false) },
-                        enabled     = !uiState.isLoading && !uiState.showOverlay,
+                        content = uiState.bottomContent,
+                        isImage = uiState.isImageMode,
+                        onClick = { onSelect(false) },
+                        onImageClick = { fullscreenImage = it },
+                        enabled = !uiState.isLoading && !uiState.showOverlay,
                         showOverlay = uiState.showOverlay && uiState.tappedTop != true,
-                        isCorrect   = uiState.lastResultCorrect,
-                        modifier    = Modifier.weight(1f),
+                        isCorrect = uiState.lastResultCorrect,
+                        modifier = Modifier.weight(1f),
                         imageLoader = imageLoader
                     )
                 }
 
-                // ── Both AI / Both Real — only in CHAOS mode ─────────────────
-                if (uiState.rulesMode == RulesMode.CHAOS) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Button(
-                            onClick  = { onBothAnswer(true) },
-                            enabled  = !uiState.isLoading && !uiState.showOverlay,
-                            modifier = Modifier.weight(1f),
-                            colors   = ButtonDefaults.buttonColors(containerColor = Purple)
-                        ) { Text("Both AI") }
-
-                        Button(
-                            onClick  = { onBothAnswer(false) },
-                            enabled  = !uiState.isLoading && !uiState.showOverlay,
-                            modifier = Modifier.weight(1f),
-                            colors   = ButtonDefaults.buttonColors(containerColor = Purple)
-                        ) { Text("Both Real") }
-                    }
-                } else {
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
+                Spacer(modifier = Modifier.height(16.dp))
             }
 
-            // ── Streak / timer overlay ───────────────────────────────────────
-            val topPad = 32.dp
+            // ───────────────────────── OVERLAYS ─────────────────────────
+
             if (timeRemainingSeconds != null) {
                 Row(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
-                        .padding(top = topPad),
+                        .padding(top = 32.dp),
                     horizontalArrangement = Arrangement.spacedBy(32.dp)
                 ) {
                     ScoreColumn(timeRemainingSeconds.toString(), "time")
                     ScoreColumn(streak.toString(), scoreLabel)
                 }
-            } else {
-                Text(
-                    text     = streak.toString(),
-                    modifier = Modifier.align(Alignment.TopCenter).padding(top = topPad),
-                    style    = MaterialTheme.typography.displayMedium,
-                    color    = Color.White
-                )
             }
 
-            // ── XP flash ────────────────────────────────────────────────────
             if (uiState.earnedXp > 0) {
                 Text(
-                    text     = "+${uiState.earnedXp} XP",
-                    color    = Color.Yellow,
-                    style    = MaterialTheme.typography.headlineMedium,
+                    text = "+${uiState.earnedXp} XP",
+                    color = Color.Yellow,
+                    style = MaterialTheme.typography.headlineMedium,
                     modifier = Modifier.align(Alignment.Center)
                 )
             }
@@ -130,13 +120,70 @@ fun GameScreen(
             if (uiState.isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.align(Alignment.Center),
-                    color    = Color.White
+                    color = Color.White
                 )
+            }
+        }
+
+        // ───────────────────────── FULLSCREEN IMAGE ─────────────────────────
+// ───────────────────────── FULLSCREEN IMAGE ─────────────────────────
+        fullscreenImage?.let { url ->
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black)
+                    .pointerInput(url) {
+
+                        detectTransformGestures { _, pan, zoom, _ ->
+
+                            scale = (scale * zoom).coerceIn(1f, 5f)
+
+                            val maxX = (size.width * (scale - 1)) / 2f
+                            val maxY = (size.height * (scale - 1)) / 2f
+
+                            offsetX = (offsetX + pan.x).coerceIn(-maxX, maxX)
+                            offsetY = (offsetY + pan.y).coerceIn(-maxY, maxY)
+                        }
+                    }
+                    .clickable { fullscreenImage = null }
+            ) {
+
+                AsyncImage(
+                    model = url,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            scaleX = scale
+                            scaleY = scale
+                            translationX = offsetX
+                            translationY = offsetY
+                        },
+                    contentScale = ContentScale.Fit,
+                    imageLoader = imageLoader
+                )
+
+                // close button
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(12.dp)
+                        .size(48.dp)
+                        .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                        .clickable { fullscreenImage = null },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ZoomOutMap,
+                        contentDescription = "Close",
+                        tint = Color.White
+                    )
+                }
             }
         }
     }
 }
-
 
 @Composable
 private fun ScoreColumn(value: String, label: String) {
@@ -151,6 +198,7 @@ private fun GameContentBox(
     content: String?,
     isImage: Boolean,
     onClick: () -> Unit,
+    onImageClick: (String) -> Unit,
     enabled: Boolean,
     showOverlay: Boolean,
     isCorrect: Boolean,
@@ -161,26 +209,68 @@ private fun GameContentBox(
         modifier = modifier
             .fillMaxWidth()
             .background(CardBg)
-            .clickable(enabled = enabled) { onClick() }
+            .clickable(enabled = enabled) {
+                onClick()
+            }
     ) {
+
         if (isImage) {
-            AsyncImage(
-                model              = content,
-                contentDescription = null,
-                modifier           = Modifier.fillMaxSize(),
-                contentScale       = ContentScale.Crop,
-                imageLoader        = imageLoader
-            )
+
+            Box(modifier = Modifier.fillMaxSize()) {
+
+                AsyncImage(
+                    model = content,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    imageLoader = imageLoader
+                )
+
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                        .size(40.dp)
+                        .background(
+                            color = Color.Black.copy(alpha = 0.45f),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        .clickable(enabled = content != null) {
+                            content?.let(onImageClick)
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ZoomOutMap,
+                        contentDescription = "Fullscreen",
+                        tint = Color.White,
+                        modifier = Modifier.size(36.dp)
+                    )
+                }
+            }
+
         } else {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(content ?: "", color = Color.White, style = MaterialTheme.typography.bodyLarge)
+
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = content ?: "",
+                    color = Color.White,
+                    style = MaterialTheme.typography.bodyLarge
+                )
             }
         }
+
         if (showOverlay) {
             Box(
-                modifier = Modifier.fillMaxSize().background(
-                    if (isCorrect) Color.Green.copy(alpha = 0.5f) else Color.Red.copy(alpha = 0.5f)
-                )
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        if (isCorrect) Color.Green.copy(alpha = 0.5f)
+                        else Color.Red.copy(alpha = 0.5f)
+                    )
             )
         }
     }
