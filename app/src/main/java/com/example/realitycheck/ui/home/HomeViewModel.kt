@@ -9,21 +9,20 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import com.example.realitycheck.ui.game.RulesMode
 
 data class HomeUiState(
     val profile: Profile? = null,
     val isLoading: Boolean = true,
     val error: String? = null,
-    // Display
     val displayName: String = "Speler",
-    // Level / XP
     val level: Int = 1,
     val xpInCurrentLevel: Int = 0,
     val xpForNextLevel: Int = 100,
     val xpFraction: Float = 0f,
     val xpToNextLevel: Int = 100,
-    // Stats
-    val highScoreStreak: Int = 0
+    val highScoreStreak: Int = 0,
+    val rulesMode: RulesMode = RulesMode.CLASSIC
 )
 
 class HomeViewModel(
@@ -35,6 +34,10 @@ class HomeViewModel(
 
     init {
         loadProfile()
+    }
+
+    fun setRulesMode(mode: RulesMode) {
+        _uiState.value = _uiState.value.copy(rulesMode = mode)
     }
 
     fun loadProfile() {
