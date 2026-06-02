@@ -11,29 +11,22 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 
-// ---------------- MODE ----------------
+enum class GameMode  { IMAGE, TEXT, SPEED }
+enum class RoundType { ONE_REAL, BOTH_AI, BOTH_REAL }
 
-enum class GameMode {
-    IMAGE,
-    TEXT,
-    SPEED
-
-}
-
-enum class RoundType {
-    ONE_REAL,
-    BOTH_AI,
-    BOTH_REAL
-}
-
-// ---------------- UI STATE ----------------
+/**
+ * Controls which round types are allowed.
+ * CLASSIC  → always one real + one AI
+ * CHAOS    → randomly picks ONE_REAL, BOTH_AI, or BOTH_REAL
+ */
+enum class RulesMode { CLASSIC, CHAOS }
 
 data class GameUiState(
     val mode: GameMode = GameMode.IMAGE,
+    val rulesMode: RulesMode = RulesMode.CLASSIC,
 
     val topContent: String? = null,
     val bottomContent: String? = null,
-
     val isImageMode: Boolean = true,
 
     val roundType: RoundType = RoundType.ONE_REAL,
@@ -50,7 +43,6 @@ data class GameUiState(
     val timeRemainingSeconds: Int? = null
 )
 
-// ---------------- VIEWMODEL ----------------
 class GameViewModel(
     private val profileRepository: ProfileRepository,
     private val contentRepository: ContentRepository,
@@ -63,13 +55,14 @@ class GameViewModel(
     private val _streak = MutableStateFlow(0)
     val currentStreak: StateFlow<Int> = _streak.asStateFlow()
 
+    private val seenUrls = mutableSetOf<String>()
+
     private val aiTexts = listOf(
         "AI generates synthetic content",
         "Neural networks process patterns",
         "Machine learning predicts outcomes",
         "Generated text with statistical patterns"
     )
-
     private val realTexts = listOf(
         "I went to the store today",
         "The weather is nice",
@@ -77,166 +70,167 @@ class GameViewModel(
         "I am going to school"
     )
 
-    init {
-        loadNextRound()
+    init { loadNextRound() }
+
+    fun setGameMode(mode: GameMode) {
+        _uiState.value = _uiState.value.copy(mode = mode, isGameOver = false)
     }
 
-    fun setMode(mode: GameMode) {
-        _uiState.value = _uiState.value.copy(mode = mode, isGameOver = false)
-        loadNextRound()
+    fun setRulesMode(mode: RulesMode) {
+        _uiState.value = _uiState.value.copy(rulesMode = mode)
+    }
+
+    // Keep setMode for compatibility with LaunchedEffect calls
+    fun setMode(mode: GameMode) = setGameMode(mode)
+
+    private fun allowedRoundTypes(): List<RoundType> = when (_uiState.value.rulesMode) {
+        RulesMode.CLASSIC -> listOf(RoundType.ONE_REAL)
+        RulesMode.CHAOS   -> RoundType.entries
     }
 
     fun loadNextRound() {
         when (_uiState.value.mode) {
-            GameMode.IMAGE -> loadImageRound()
-            GameMode.TEXT  -> loadTextRound()
-            GameMode.SPEED -> loadImageRound()
+            GameMode.IMAGE, GameMode.SPEED -> loadImageRound()
+            GameMode.TEXT                  -> loadTextRound()
         }
     }
+
+    // ── Image ────────────────────────────────────────────────────────────────
 
     private fun loadImageRound() {
         _uiState.value = _uiState.value.copy(isLoading = true)
-
         viewModelScope.launch {
-            contentRepository.getNextPair().fold(
-                onSuccess = { (first, second) ->
-                    val type = RoundType.entries.random()
-
-                    when (type) {
-                        RoundType.ONE_REAL -> {
-                            // Ensure one is AI and one is real; if both same type fall back
-                            val (realItem, aiItem) = if (!first.isAi && second.isAi) {
-                                first to second
-                            } else if (first.isAi && !second.isAi) {
-                                second to first
-                            } else {
-                                // Both same — treat as BOTH_AI or BOTH_REAL
-                                val bothAi = first.isAi
-                                val topUrl = first.contentUrl ?: ""
-                                val botUrl = second.contentUrl ?: ""
-                                _uiState.value = _uiState.value.copy(
-                                    topContent    = topUrl,
-                                    bottomContent = botUrl,
-                                    isImageMode   = true,
-                                    roundType     = if (bothAi) RoundType.BOTH_AI else RoundType.BOTH_REAL,
-                                    isLoading     = false,
-                                    showOverlay   = false
-                                )
-                                return@fold
-                            }
-                            val topIsReal = Random.nextBoolean()
-                            _uiState.value = _uiState.value.copy(
-                                topContent    = if (topIsReal) realItem.contentUrl else aiItem.contentUrl,
-                                bottomContent = if (topIsReal) aiItem.contentUrl else realItem.contentUrl,
-                                isCorrectTop  = topIsReal,
-                                isImageMode   = true,
-                                roundType     = RoundType.ONE_REAL,
-                                isLoading     = false,
-                                showOverlay   = false
-                            )
-                        }
-
-                        RoundType.BOTH_AI -> {
-                            _uiState.value = _uiState.value.copy(
-                                topContent    = first.contentUrl,
-                                bottomContent = second.contentUrl,
-                                isImageMode   = true,
-                                roundType     = RoundType.BOTH_AI,
-                                isLoading     = false,
-                                showOverlay   = false
-                            )
-                        }
-
-                        RoundType.BOTH_REAL -> {
-                            _uiState.value = _uiState.value.copy(
-                                topContent    = first.contentUrl,
-                                bottomContent = second.contentUrl,
-                                isImageMode   = true,
-                                roundType     = RoundType.BOTH_REAL,
-                                isLoading     = false,
-                                showOverlay   = false
-                            )
-                        }
-                    }
-                },
-                onFailure = {
-                    // Fallback to URL construction if repository fails
-                    loadImageRoundFallback()
-                }
-            )
+            when (val type = allowedRoundTypes().random()) {
+                RoundType.ONE_REAL  -> loadOneRealRound()
+                RoundType.BOTH_AI   -> loadBothSameRound(wantAi = true)
+                RoundType.BOTH_REAL -> loadBothSameRound(wantAi = false)
+            }
         }
     }
 
-    /** Fallback for when the content repository is unavailable. */
-    private fun loadImageRoundFallback() {
-        val id    = (1..MAX_IMAGE_ID).random()
-        val real1 = "$BASE_URL/Real/$id.jpg"
-        val real2 = "$BASE_URL/Real/${id + 1}.jpg"
-        val ai1   = "$BASE_URL/AI/$id.jpg"
-        val ai2   = "$BASE_URL/AI/${id + 1}.jpg"
-        val type  = RoundType.entries.random()
+    private suspend fun loadOneRealRound(attempt: Int = 0) {
+        if (attempt >= MAX_ATTEMPTS) { fallback(RoundType.ONE_REAL); return }
 
-        when (type) {
-            RoundType.ONE_REAL -> {
+        contentRepository.getNextPair().fold(
+            onSuccess = { (a, b) ->
+                val real = listOf(a, b).firstOrNull { !it.isAi }
+                val ai   = listOf(a, b).firstOrNull {  it.isAi }
+
+                if (real == null || ai == null) { loadOneRealRound(attempt + 1); return }
+
+                val realUrl = real.contentUrl ?: run { loadOneRealRound(attempt + 1); return }
+                val aiUrl   = ai.contentUrl   ?: run { loadOneRealRound(attempt + 1); return }
+
+                if (realUrl in seenUrls || aiUrl in seenUrls) { loadOneRealRound(attempt + 1); return }
+
+                seenUrls += realUrl; seenUrls += aiUrl
                 val topIsReal = Random.nextBoolean()
                 _uiState.value = _uiState.value.copy(
-                    topContent    = if (topIsReal) real1 else ai1,
-                    bottomContent = if (topIsReal) ai1 else real1,
+                    topContent    = if (topIsReal) realUrl else aiUrl,
+                    bottomContent = if (topIsReal) aiUrl   else realUrl,
                     isCorrectTop  = topIsReal,
-                    isImageMode   = true, roundType = type,
+                    isImageMode   = true, roundType = RoundType.ONE_REAL,
+                    isLoading = false, showOverlay = false
+                )
+            },
+            onFailure = { fallback(RoundType.ONE_REAL) }
+        )
+    }
+
+    private suspend fun loadBothSameRound(wantAi: Boolean, attempt: Int = 0) {
+        val type = if (wantAi) RoundType.BOTH_AI else RoundType.BOTH_REAL
+        if (attempt >= MAX_ATTEMPTS) { fallback(type); return }
+
+        contentRepository.getNextPair().fold(
+            onSuccess = { (a, b) ->
+                val candidates = listOf(a, b).filter { it.isAi == wantAi }
+                if (candidates.size < 2) { loadBothSameRound(wantAi, attempt + 1); return }
+
+                val urlA = candidates[0].contentUrl ?: run { loadBothSameRound(wantAi, attempt + 1); return }
+                val urlB = candidates[1].contentUrl ?: run { loadBothSameRound(wantAi, attempt + 1); return }
+
+                if (urlA in seenUrls || urlB in seenUrls || urlA == urlB) {
+                    loadBothSameRound(wantAi, attempt + 1); return
+                }
+
+                seenUrls += urlA; seenUrls += urlB
+                _uiState.value = _uiState.value.copy(
+                    topContent = urlA, bottomContent = urlB,
+                    isImageMode = true, roundType = type,
+                    isLoading = false, showOverlay = false
+                )
+            },
+            onFailure = { fallback(type) }
+        )
+    }
+
+    private fun fallback(type: RoundType) {
+        var id = (1..MAX_IMAGE_ID).random()
+        repeat(MAX_ATTEMPTS) {
+            val r = "$BASE_URL/Real/$id.jpg"
+            val a = "$BASE_URL/AI/$id.jpg"
+            if (r !in seenUrls && a !in seenUrls) return@repeat
+            id = (1..MAX_IMAGE_ID).random()
+        }
+        val r1 = "$BASE_URL/Real/$id.jpg"; val r2 = "$BASE_URL/Real/${id+1}.jpg"
+        val a1 = "$BASE_URL/AI/$id.jpg";   val a2 = "$BASE_URL/AI/${id+1}.jpg"
+        seenUrls += r1; seenUrls += a1
+        when (type) {
+            RoundType.ONE_REAL -> {
+                val top = Random.nextBoolean()
+                _uiState.value = _uiState.value.copy(
+                    topContent = if (top) r1 else a1, bottomContent = if (top) a1 else r1,
+                    isCorrectTop = top, isImageMode = true, roundType = type,
                     isLoading = false, showOverlay = false
                 )
             }
-            RoundType.BOTH_AI -> _uiState.value = _uiState.value.copy(
-                topContent = ai1, bottomContent = ai2,
-                isImageMode = true, roundType = type,
+            RoundType.BOTH_AI   -> _uiState.value = _uiState.value.copy(
+                topContent = a1, bottomContent = a2, isImageMode = true, roundType = type,
                 isLoading = false, showOverlay = false
             )
             RoundType.BOTH_REAL -> _uiState.value = _uiState.value.copy(
-                topContent = real1, bottomContent = real2,
-                isImageMode = true, roundType = type,
+                topContent = r1, bottomContent = r2, isImageMode = true, roundType = type,
                 isLoading = false, showOverlay = false
             )
         }
     }
+
+    // ── Text ─────────────────────────────────────────────────────────────────
 
     private fun loadTextRound() {
-        val type  = RoundType.entries.random()
+        val type  = allowedRoundTypes().random()
         val ai1   = aiTexts.random()
-        val ai2   = aiTexts.random()
+        val ai2   = aiTexts.filter { it != ai1 }.random()
         val real1 = realTexts.random()
-        val real2 = realTexts.random()
+        val real2 = realTexts.filter { it != real1 }.random()
 
         when (type) {
             RoundType.ONE_REAL -> {
-                val topIsReal = Random.nextBoolean()
+                val top = Random.nextBoolean()
                 _uiState.value = _uiState.value.copy(
-                    topContent    = if (topIsReal) real1 else ai1,
-                    bottomContent = if (topIsReal) ai1 else real1,
-                    isCorrectTop  = topIsReal,
-                    isImageMode   = false, roundType = type,
+                    topContent = if (top) real1 else ai1, bottomContent = if (top) ai1 else real1,
+                    isCorrectTop = top, isImageMode = false, roundType = type,
                     isLoading = false, showOverlay = false
                 )
             }
-            RoundType.BOTH_AI -> _uiState.value = _uiState.value.copy(
-                topContent = ai1, bottomContent = ai2,
-                isImageMode = false, roundType = type,
+            RoundType.BOTH_AI   -> _uiState.value = _uiState.value.copy(
+                topContent = ai1, bottomContent = ai2, isImageMode = false, roundType = type,
                 isLoading = false, showOverlay = false
             )
             RoundType.BOTH_REAL -> _uiState.value = _uiState.value.copy(
-                topContent = real1, bottomContent = real2,
-                isImageMode = false, roundType = type,
+                topContent = real1, bottomContent = real2, isImageMode = false, roundType = type,
                 isLoading = false, showOverlay = false
             )
         }
     }
+
+    // ── Input ────────────────────────────────────────────────────────────────
 
     fun onSelect(isTop: Boolean) {
         if (_uiState.value.showOverlay) return
         val correct = when (_uiState.value.roundType) {
-            RoundType.ONE_REAL  -> isTop == _uiState.value.isCorrectTop
-            RoundType.BOTH_AI   -> false
-            RoundType.BOTH_REAL -> false
+            RoundType.ONE_REAL                     -> isTop == _uiState.value.isCorrectTop
+            RoundType.BOTH_AI, RoundType.BOTH_REAL -> false
         }
         handleResult(correct, isTop)
     }
@@ -258,10 +252,10 @@ class GameViewModel(
             delay(1000)
             if (correct) {
                 _streak.value++
-                val xpEarned = GameRewards.CORRECT_ANSWER_XP + GameRewards.streakBonus(_streak.value)
-                _uiState.value = _uiState.value.copy(earnedXp = xpEarned)
-                profileRepository.addXp(xpEarned).onSuccess { onXpUpdated() }
-                delay(1200)
+                val xp = GameRewards.CORRECT_ANSWER_XP + GameRewards.streakBonus(_streak.value)
+                _uiState.value = _uiState.value.copy(earnedXp = xp)
+                profileRepository.addXp(xp).onSuccess { onXpUpdated() }
+                delay(800)
                 _uiState.value = _uiState.value.copy(earnedXp = 0)
                 loadNextRound()
             } else {
@@ -273,6 +267,7 @@ class GameViewModel(
 
     companion object {
         private const val MAX_IMAGE_ID = 400
+        private const val MAX_ATTEMPTS = 5
         private const val BASE_URL =
             "https://vxqxbbkokdmxgirkhttc.supabase.co/storage/v1/object/public/images"
     }

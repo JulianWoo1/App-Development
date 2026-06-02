@@ -13,20 +13,23 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.realitycheck.ui.components.XpProgressBar
 import com.example.realitycheck.ui.game.GameMode
+import com.example.realitycheck.ui.game.RulesMode
 
-private val BgDeep = Color(0xFF050505)
-private val CardBg = Color(0xFF0D0D0D)
+private val BgDeep       = Color(0xFF050505)
+private val CardBg       = Color(0xFF0D0D0D)
 private val ButtonPurple = Color(0xFF5B2EFF)
-private val TextMuted = Color(0xFFA0A0A0)
-private val WelcomeGray = Color(0xFFB0B0B0)
+private val TextMuted    = Color(0xFFA0A0A0)
+private val WelcomeGray  = Color(0xFFB0B0B0)
 private val SubtitleGray = Color(0xFF9A9A9A)
+private val ToggleBg     = Color(0xFF12122A)
 
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
-    onStartGame: (GameMode) -> Unit
+    onStartGame: (GameMode, RulesMode) -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
+    var selectedRules by remember { mutableStateOf(RulesMode.CLASSIC) }
 
     Column(
         modifier = Modifier
@@ -35,14 +38,12 @@ fun HomeScreen(
             .padding(horizontal = 24.dp, vertical = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
         Text(
             text = state.displayName,
             color = Color.White,
             fontSize = 28.sp,
             fontWeight = FontWeight.ExtraBold
         )
-
         Text(
             text = "Can you differentiate real from AI?",
             color = SubtitleGray,
@@ -50,15 +51,13 @@ fun HomeScreen(
             modifier = Modifier.padding(top = 6.dp)
         )
 
+        // ── XP card ──────────────────────────────────────────────────────────
         Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 24.dp),
+            modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(containerColor = CardBg)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -68,82 +67,105 @@ fun HomeScreen(
                         color = Color.White,
                         fontWeight = FontWeight.SemiBold
                     )
-
                     Text(
-                        text = "Beste streak: ${state.profile?.highScoreStreak ?: 0}",
+                        text = "Beste streak: ${state.highScoreStreak}",
                         color = TextMuted,
                         fontSize = 12.sp
                     )
                 }
-
                 Spacer(modifier = Modifier.height(12.dp))
-
                 if (state.isLoading) {
                     LinearProgressIndicator(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(10.dp),
+                        modifier = Modifier.fillMaxWidth().height(10.dp),
                         color = ButtonPurple
                     )
                 } else {
                     XpProgressBar(
-                        totalXp = state.profile?.totalXp ?: 0,
+                        totalXp  = state.profile?.totalXp ?: 0,
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(28.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
+        // ── Rules mode toggle ─────────────────────────────────────────────────
+        Text(
+            text = "MODUS",
+            color = WelcomeGray,
+            fontSize = 12.sp,
+            modifier = Modifier.align(Alignment.Start).padding(bottom = 8.dp)
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(ToggleBg, RoundedCornerShape(12.dp))
+                .padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            RulesMode.entries.forEach { mode ->
+                val selected = mode == selectedRules
+                Button(
+                    onClick  = { selectedRules = mode },
+                    modifier = Modifier.weight(1f),
+                    shape    = RoundedCornerShape(10.dp),
+                    colors   = ButtonDefaults.buttonColors(
+                        containerColor = if (selected) ButtonPurple else Color.Transparent,
+                        contentColor   = if (selected) Color.White  else TextMuted
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(0.dp)
+                ) {
+                    Text(
+                        text       = if (mode == RulesMode.CLASSIC) "Classic" else "Mixed",
+                        fontSize   = 13.sp,
+                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // ── Game mode cards ───────────────────────────────────────────────────
         Text(
             text = "SPELMODI",
             color = WelcomeGray,
             fontSize = 12.sp,
-            modifier = Modifier
-                .align(Alignment.Start)
-                .padding(bottom = 12.dp)
+            modifier = Modifier.align(Alignment.Start).padding(bottom = 12.dp)
         )
 
         GameModeCard(
-            icon = "\uD83D\uDDBC️",
-            title = "Image Mode",
-            subtitle = "The classic mode",
-            badge = "Popular",
+            icon      = "\uD83D\uDDBC️",
+            title     = "Image Mode",
+            subtitle  = "The classic mode",
+            badge     = "Popular",
             badgeColor = Color(0xFF1DB954),
-            onClick = { onStartGame(GameMode.IMAGE) }
+            onClick   = { onStartGame(GameMode.IMAGE, selectedRules) }
         )
-
         Spacer(modifier = Modifier.height(12.dp))
-
         GameModeCard(
-            icon = "\u270D️",
-            title = "Text Mode",
-            subtitle = "Detect AI-written text",
-            badge = "New",
+            icon      = "\u270D️",
+            title     = "Text Mode",
+            subtitle  = "Detect AI-written text",
+            badge     = "New",
             badgeColor = ButtonPurple,
-            onClick = { onStartGame(GameMode.TEXT) }
+            onClick   = { onStartGame(GameMode.TEXT, selectedRules) }
         )
-
         Spacer(modifier = Modifier.height(12.dp))
-
         GameModeCard(
-            icon = "\u26A1",
-            title = "Speed Run",
-            subtitle = "Answer as many as you can in 60s",
-            badge = null,
+            icon      = "\u26A1",
+            title     = "Speed Run",
+            subtitle  = "Answer as many as you can in 60s",
+            badge     = null,
             badgeColor = null,
-            onClick = { onStartGame(GameMode.SPEED) }
+            onClick   = { onStartGame(GameMode.SPEED, RulesMode.CLASSIC) } // speed always classic
         )
 
         Spacer(modifier = Modifier.weight(1f))
 
         state.error?.let {
-            Text(
-                text = it,
-                color = MaterialTheme.colorScheme.error,
-                fontSize = 12.sp
-            )
+            Text(text = it, color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
         }
     }
 }
@@ -158,69 +180,39 @@ private fun GameModeCard(
     onClick: () -> Unit
 ) {
     Button(
-        onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(72.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = ButtonPurple)
+        onClick  = onClick,
+        modifier = Modifier.fillMaxWidth().height(72.dp),
+        shape    = RoundedCornerShape(16.dp),
+        colors   = ButtonDefaults.buttonColors(containerColor = Color(0xFF0D0D0D))
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 14.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-
             Box(
                 modifier = Modifier
-                    .size(48.dp)
-                    .background(Color(0xFF161616), RoundedCornerShape(14.dp)),
+                    .size(40.dp)
+                    .background(Color(0xFF1A1A2E), RoundedCornerShape(12.dp)),
                 contentAlignment = Alignment.Center
-            ) {
-                Text(text = icon)
-            }
+            ) { Text(icon) }
 
-            Spacer(modifier = Modifier.width(14.dp))
+            Spacer(modifier = Modifier.width(12.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    color = Color.White,
-                    fontWeight = FontWeight.SemiBold
-                )
-
-                Text(
-                    text = subtitle,
-                    color = WelcomeGray,
-                    fontSize = 12.sp
-                )
+                Text(title,    color = Color.White,   fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                Text(subtitle, color = TextMuted,     fontSize = 12.sp)
             }
 
             if (badge != null && badgeColor != null) {
                 Box(
                     modifier = Modifier
-                        .background(
-                            badgeColor.copy(alpha = 0.15f),
-                            RoundedCornerShape(10.dp)
-                        )
+                        .background(badgeColor.copy(alpha = 0.15f), RoundedCornerShape(10.dp))
                         .padding(horizontal = 10.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        text = badge,
-                        color = badgeColor,
-                        fontSize = 11.sp
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(10.dp))
+                ) { Text(badge, color = badgeColor, fontSize = 11.sp) }
+                Spacer(modifier = Modifier.width(8.dp))
             }
 
-            Text(
-                text = "›",
-                color = WelcomeGray,
-                fontSize = 22.sp
-            )
+            Text("›", color = TextMuted, fontSize = 22.sp)
         }
     }
 }

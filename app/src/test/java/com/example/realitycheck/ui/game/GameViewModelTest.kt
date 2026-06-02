@@ -3,6 +3,7 @@ package com.example.realitycheck.ui.game
 import com.example.realitycheck.data.model.Profile
 import com.example.realitycheck.data.repository.FakeAuthRepository
 import com.example.realitycheck.data.repository.FakeProfileRepository
+import com.example.realitycheck.data.repository.FakeContentRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -24,12 +25,15 @@ class GameViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var authRepo: FakeAuthRepository
     private lateinit var profileRepo: FakeProfileRepository
+    private lateinit var contentRepo: FakeContentRepository
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         authRepo = FakeAuthRepository()
         profileRepo = FakeProfileRepository(authRepo)
+        contentRepo = FakeContentRepository()
+
     }
 
     @After
@@ -39,8 +43,13 @@ class GameViewModelTest {
 
     private fun createViewModel(): GameViewModel {
         authRepo.storedUserId = "test-user"
-        profileRepo.profiles["test-user"] = Profile(id = "test-user")
-        return GameViewModel(profileRepo)
+        profileRepo.profiles["test-user"] =
+            Profile(id = "test-user")
+
+        return GameViewModel(
+            profileRepository = profileRepo,
+            contentRepository = contentRepo
+        )
     }
 
     private suspend fun forceRoundType(viewModel: GameViewModel, type: RoundType, scope: TestScope) {
