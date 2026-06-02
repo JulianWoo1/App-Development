@@ -2,6 +2,7 @@ package com.example.realitycheck.ui.game
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.realitycheck.data.repository.ContentRepository
 import com.example.realitycheck.data.repository.ProfileRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -13,10 +14,13 @@ import kotlinx.coroutines.launch
 import kotlin.random.Random
 
 class SpeedRunViewModel(
-    private val profileRepository: ProfileRepository
+    private val profileRepository: ProfileRepository,
+    private val contentRepository: ContentRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(GameUiState(mode = GameMode.SPEED, timeRemainingSeconds = 60))
+    private val _uiState = MutableStateFlow(
+        GameUiState(mode = GameMode.SPEED, timeRemainingSeconds = 60)
+    )
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
 
     private val _correctCount = MutableStateFlow(0)
@@ -31,7 +35,7 @@ class SpeedRunViewModel(
 
     private fun startTimer() {
         timerJob = viewModelScope.launch {
-            while (isActive && _uiState.value.timeRemainingSeconds ?: 0 > 0) {
+            while (isActive && (_uiState.value.timeRemainingSeconds ?: 0) > 0) {
                 delay(1000)
                 val remaining = (_uiState.value.timeRemainingSeconds ?: 0) - 1
                 _uiState.value = _uiState.value.copy(timeRemainingSeconds = remaining)
@@ -45,58 +49,51 @@ class SpeedRunViewModel(
 
     fun loadNextRound() {
         if (_uiState.value.isGameOver) return
+        _uiState.value = _uiState.value.copy(isLoading = true)
 
-        val id = (1..MAX_IMAGE_ID).random()
+        viewModelScope.launch {
+            contentRepository.getNextPair().fold(
+                onSuccess = { (first, second) ->
+                    val topIsReal = Random.nextBoolean()
+                    val (realItem, aiItem) = if (!first.isAi) first to second else second to first
 
-        val real1 = "$SUPABASE_STORAGE_URL/Real/$id.jpg"
-        val real2 = "$SUPABASE_STORAGE_URL/Real/${id + 1}.jpg"
-        val ai1 = "$SUPABASE_STORAGE_URL/AI/$id.jpg"
-        val ai2 = "$SUPABASE_STORAGE_URL/AI/${id + 1}.jpg"
-
-        val type = RoundType.entries.random()
-
-        when (type) {
-            RoundType.ONE_REAL -> {
-                val topIsReal = Random.nextBoolean()
-                _uiState.value = _uiState.value.copy(
-                    topContent = if (topIsReal) real1 else ai1,
-                    bottomContent = if (topIsReal) ai1 else real1,
-                    isCorrectTop = topIsReal,
-                    isImageMode = true,
-                    roundType = type,
-                    isLoading = false,
-                    showOverlay = false
-                )
-            }
-            RoundType.BOTH_AI -> {
-                _uiState.value = _uiState.value.copy(
-                    topContent = ai1,
-                    bottomContent = ai2,
-                    isImageMode = true,
-                    roundType = type,
-                    isLoading = false,
-                    showOverlay = false
-                )
-            }
-            RoundType.BOTH_REAL -> {
-                _uiState.value = _uiState.value.copy(
-                    topContent = real1,
-                    bottomContent = real2,
-                    isImageMode = true,
-                    roundType = type,
-                    isLoading = false,
-                    showOverlay = false
-                )
-            }
+                    _uiState.value = _uiState.value.copy(
+                        topContent    = if (topIsReal) realItem.contentUrl else aiItem.contentUrl,
+                        bottomContent = if (topIsReal) aiItem.contentUrl else realItem.contentUrl,
+                        isCorrectTop  = topIsReal,
+                        isImageMode   = true,
+                        roundType     = RoundType.ONE_REAL,
+                        isLoading     = false,
+                        showOverlay   = false
+                    )
+                },
+                onFailure = { loadNextRoundFallback() }
+            )
         }
+    }
+
+    private fun loadNextRoundFallback() {
+        val id    = (1..MAX_IMAGE_ID).random()
+        val real1 = "$BASE_URL/Real/$id.jpg"
+        val ai1   = "$BASE_URL/AI/$id.jpg"
+        val topIsReal = Random.nextBoolean()
+
+        _uiState.value = _uiState.value.copy(
+            topContent    = if (topIsReal) real1 else ai1,
+            bottomContent = if (topIsReal) ai1 else real1,
+            isCorrectTop  = topIsReal,
+            isImageMode   = true,
+            roundType     = RoundType.ONE_REAL,
+            isLoading     = false,
+            showOverlay   = false
+        )
     }
 
     fun onSelect(isTop: Boolean) {
         if (_uiState.value.showOverlay || _uiState.value.isGameOver) return
-
         val correct = when (_uiState.value.roundType) {
-            RoundType.ONE_REAL -> isTop == _uiState.value.isCorrectTop
-            RoundType.BOTH_AI -> false
+            RoundType.ONE_REAL  -> isTop == _uiState.value.isCorrectTop
+            RoundType.BOTH_AI   -> false
             RoundType.BOTH_REAL -> false
         }
         handleResult(correct, isTop)
@@ -104,10 +101,9 @@ class SpeedRunViewModel(
 
     fun onBothAnswer(guessedAi: Boolean) {
         if (_uiState.value.showOverlay || _uiState.value.isGameOver) return
-
         val correct = when (_uiState.value.roundType) {
-            RoundType.ONE_REAL -> false
-            RoundType.BOTH_AI -> guessedAi
+            RoundType.ONE_REAL  -> false
+            RoundType.BOTH_AI   -> guessedAi
             RoundType.BOTH_REAL -> !guessedAi
         }
         handleResult(correct, null)
@@ -115,29 +111,20 @@ class SpeedRunViewModel(
 
     private fun handleResult(correct: Boolean, tappedTop: Boolean?) {
         _uiState.value = _uiState.value.copy(
-            showOverlay = true,
-            lastResultCorrect = correct,
-            tappedTop = tappedTop
+            showOverlay = true, lastResultCorrect = correct, tappedTop = tappedTop
         )
         viewModelScope.launch {
-            delay(1000)
-            if (correct) {
-                _correctCount.value++
-            }
+            delay(600)
+            if (correct) _correctCount.value++
             loadNextRound()
         }
     }
 
-    fun onGameOverDismissed() {
-        timerJob?.cancel()
-    }
-
-    fun setMode(mode: GameMode) {
-        // SpeedRunViewModel only operates in SPEED mode
-    }
+    fun onGameOverDismissed() { timerJob?.cancel() }
 
     companion object {
         private const val MAX_IMAGE_ID = 400
-        private const val SUPABASE_STORAGE_URL = "https://vxqxbbkokdmxgirkhttc.supabase.co/storage/v1/object/public/images"
+        private const val BASE_URL =
+            "https://vxqxbbkokdmxgirkhttc.supabase.co/storage/v1/object/public/images"
     }
 }

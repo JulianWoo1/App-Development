@@ -13,7 +13,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -31,7 +30,13 @@ import com.example.realitycheck.ui.onboarding.OnboardingScreen
 import com.example.realitycheck.ui.profile.ProfileScreen
 import com.example.realitycheck.ui.scores.ScoresScreen
 
-private val bottomNavItems = listOf("home", "scores", "badges", "profile")
+object GameResultHolder {
+    var score: String = "0"
+    var accuracy: String = "0%"
+    var fastestTime: String = "0s"
+    var rank: String = "#0"
+    var xpGained: Int = 0
+}
 
 private data class BottomNavItem(
     val route: String,
@@ -40,36 +45,42 @@ private data class BottomNavItem(
 )
 
 private val bottomNavItemsList = listOf(
-    BottomNavItem("home", "Home", Icons.Default.Home),
-    BottomNavItem("scores", "Scores", Icons.Default.Star),
-    BottomNavItem("badges", "Badges", Icons.Default.Favorite),
+    BottomNavItem("home",    "Home",    Icons.Default.Home),
+    BottomNavItem("scores",  "Scores",  Icons.Default.Star),
+    BottomNavItem("badges",  "Badges",  Icons.Default.Favorite),
     BottomNavItem("profile", "Profiel", Icons.Default.Person)
 )
 
 @Composable
 fun MainNavHost() {
-    val navController = rememberNavController()
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentDestination = navBackStackEntry?.destination
 
-    val showBottomNav = currentDestination?.route in bottomNavItems
+    val navController = rememberNavController()
+
+    val homeViewModel: HomeViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                HomeViewModel(SupabaseModule.profileRepository) as T
+        }
+    )
+
+    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
+    val showBottomNav = currentRoute in listOf("home", "scores", "badges", "profile")
 
     Scaffold(
         bottomBar = {
             if (showBottomNav) {
                 NavigationBar {
                     bottomNavItemsList.forEach { item ->
-                        val selected = currentDestination?.route == item.route
                         NavigationBarItem(
-                            selected = selected,
-                            onClick = {
+                            selected = currentRoute == item.route,
+                            onClick  = {
                                 navController.navigate(item.route) {
                                     popUpTo("home") { saveState = true }
                                     launchSingleTop = true
-                                    restoreState = true
+                                    restoreState    = true
                                 }
                             },
-                            icon = { Icon(item.icon, contentDescription = item.label) },
+                            icon  = { Icon(item.icon, null) },
                             label = { Text(item.label) }
                         )
                     }
@@ -77,11 +88,13 @@ fun MainNavHost() {
             }
         }
     ) { paddingValues ->
+
         NavHost(
-            navController = navController,
+            navController    = navController,
             startDestination = "home",
-            modifier = Modifier.padding(paddingValues)
+            modifier         = Modifier.padding(paddingValues)
         ) {
+
             composable("onboarding") {
                 OnboardingScreen(
                     onComplete = {
@@ -91,121 +104,110 @@ fun MainNavHost() {
                     }
                 )
             }
-            composable("home") {
-                val homeViewModel: HomeViewModel = viewModel(
-                    factory = object : ViewModelProvider.Factory {
-                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                            return HomeViewModel(SupabaseModule.profileRepository) as T
-                        }
-                    }
-                )
-                HomeScreen(
-                    homeViewModel,
-                    onStartGame = { mode ->
-                        val route = when (mode) {
-                            GameMode.IMAGE -> "game/image"
-                            GameMode.TEXT -> "game/text"
-                            GameMode.SPEED -> "game/speed"
-                        }
-                        navController.navigate(route)
-                    }
-                )
-            }
-            composable("scores") {
-                ScoresScreen()
-            }
-            composable("badges") {
-                BadgesScreen()
-            }
-            composable("profile") {
-                ProfileScreen()
-            }
-            composable("game/{mode}") { backStackEntry ->
-                val mode = backStackEntry.arguments?.getString("mode")
 
-                val gameMode = when (mode) {
+            composable("home") {
+                HomeScreen(
+                    viewModel    = homeViewModel,
+                    onStartGame  = { mode ->
+                        navController.navigate(
+                            when (mode) {
+                                GameMode.IMAGE -> "game/image"
+                                GameMode.TEXT  -> "game/text"
+                                GameMode.SPEED -> "game/speed"
+                            }
+                        )
+                    }
+                )
+            }
+
+            composable("game/{mode}") { backStackEntry ->
+                val gameMode = when (backStackEntry.arguments?.getString("mode")) {
                     "text" -> GameMode.TEXT
-                    else -> GameMode.IMAGE
+                    else   -> GameMode.IMAGE
                 }
 
                 val gameViewModel: GameViewModel = viewModel(
                     factory = object : ViewModelProvider.Factory {
-                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                            return GameViewModel(SupabaseModule.profileRepository) as T
-                        }
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                            GameViewModel(
+                                profileRepository   = SupabaseModule.profileRepository,
+                                contentRepository   = SupabaseModule.contentRepository,
+                                onXpUpdated         = { homeViewModel.loadProfile() }
+                            ) as T
                     }
                 )
 
-                LaunchedEffect(gameMode) {
-                    gameViewModel.setMode(gameMode)
-                }
+                LaunchedEffect(gameMode) { gameViewModel.setMode(gameMode) }
 
-                val state by gameViewModel.uiState.collectAsState()
+                val state  by gameViewModel.uiState.collectAsState()
+                val streak by gameViewModel.currentStreak.collectAsState()
 
                 LaunchedEffect(state.isGameOver) {
                     if (state.isGameOver) {
+                        GameResultHolder.score = streak.toString()
                         navController.navigate("gameover") {
-                            popUpTo("game/image") { inclusive = true }
+                            popUpTo("home") { inclusive = false }
                         }
                     }
                 }
 
-                val streak by gameViewModel.currentStreak.collectAsState()
-
                 GameScreen(
-                    uiState = state,
-                    streak = streak,
+                    uiState              = state,
+                    streak               = streak,
                     timeRemainingSeconds = null,
-                    onSelect = { gameViewModel.onSelect(it) },
-                    onBothAnswer = { gameViewModel.onBothAnswer(it) },
-                    onGameOverDismissed = { navController.popBackStack() }
+                    onSelect             = { gameViewModel.onSelect(it) },
+                    onBothAnswer         = { gameViewModel.onBothAnswer(it) },
+                    onGameOverDismissed  = { navController.popBackStack() }
                 )
             }
 
             composable("game/speed") {
                 val speedRunViewModel: SpeedRunViewModel = viewModel(
                     factory = object : ViewModelProvider.Factory {
-                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                            return SpeedRunViewModel(SupabaseModule.profileRepository) as T
-                        }
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                            SpeedRunViewModel(
+                                profileRepository = SupabaseModule.profileRepository,
+                                contentRepository = SupabaseModule.contentRepository
+                            ) as T
                     }
                 )
 
-                val state by speedRunViewModel.uiState.collectAsState()
+                val state        by speedRunViewModel.uiState.collectAsState()
+                val correctCount by speedRunViewModel.currentCorrectCount.collectAsState()
 
                 LaunchedEffect(state.isGameOver) {
                     if (state.isGameOver) {
+                        GameResultHolder.score = correctCount.toString()
                         navController.navigate("gameover") {
-                            popUpTo("game/image") { inclusive = true }
+                            popUpTo("home") { inclusive = false }
                         }
                     }
                 }
 
-                val correctCount by speedRunViewModel.currentCorrectCount.collectAsState()
-
                 GameScreen(
-                    uiState = state,
-                    streak = correctCount,
+                    uiState              = state,
+                    streak               = correctCount,
                     timeRemainingSeconds = state.timeRemainingSeconds,
-                    scoreLabel = "correct",
-                    onSelect = { speedRunViewModel.onSelect(it) },
-                    onBothAnswer = { speedRunViewModel.onBothAnswer(it) },
-                    onGameOverDismissed = {
+                    scoreLabel           = "correct",
+                    onSelect             = { speedRunViewModel.onSelect(it) },
+                    onBothAnswer         = { speedRunViewModel.onBothAnswer(it) },
+                    onGameOverDismissed  = {
                         speedRunViewModel.onGameOverDismissed()
                         navController.popBackStack()
                     }
                 )
             }
+
             composable("gameover") {
                 GameOverScreen(
-                    score = "0", // temporary, we’ll fix this in step 4
-                    accuracy = "74%",
-                    fastestTime = "1.4s",
-                    bestRank = "#18",
-                    level = 23,
-                    currentXp = 2820,
-                    maxXp = 5000,
-                    gainedXp = 230,
+                    score       = GameResultHolder.score,
+                    accuracy    = GameResultHolder.accuracy,
+                    fastestTime = GameResultHolder.fastestTime,
+                    bestRank    = GameResultHolder.rank,
+                    level       = 23,
+                    currentXp   = 2820,
+                    maxXp       = 5000,
+                    gainedXp    = GameResultHolder.xpGained,
                     onPlayAgain = {
                         navController.navigate("home") {
                             popUpTo("gameover") { inclusive = true }
@@ -218,6 +220,10 @@ fun MainNavHost() {
                     }
                 )
             }
+
+            composable("scores")  { ScoresScreen() }
+            composable("badges")  { BadgesScreen() }
+            composable("profile") { ProfileScreen() }
         }
     }
 }

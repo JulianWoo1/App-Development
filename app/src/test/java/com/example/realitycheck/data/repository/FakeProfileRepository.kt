@@ -32,13 +32,19 @@ class FakeProfileRepository(private val authRepository: FakeAuthRepository = Fak
         return Result.success(updated)
     }
 
-    override suspend fun addXp(amount: Int): Result<Profile> {
-        val currentProfileResult = getCurrentUserProfile()
-        if (currentProfileResult.isFailure) return currentProfileResult
-        val currentProfile = currentProfileResult.getOrNull()!!
-        val updated = currentProfile.copy(totalXp = currentProfile.totalXp + amount)
-        profiles[currentProfile.id] = updated
-        return Result.success(updated)
+    override suspend fun addXp(amount: Int): Result<Unit> {
+        val userId = authRepository.getCurrentUserId()
+            ?: return Result.failure(Exception("No user logged in"))
+
+        val profile = profiles[userId] ?: Profile(id = userId)
+
+        val updated = profile.copy(
+            totalXp = profile.totalXp + amount
+        )
+
+        profiles[userId] = updated
+
+        return Result.success(Unit)
     }
 
     override suspend fun updateHighScore(newStreak: Int): Result<Profile> {

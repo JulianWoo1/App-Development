@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.realitycheck.data.model.Profile
 import com.example.realitycheck.data.repository.ProfileRepository
+import com.example.realitycheck.ui.game.LevelSystem
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,15 +13,23 @@ import kotlinx.coroutines.launch
 data class HomeUiState(
     val profile: Profile? = null,
     val isLoading: Boolean = true,
+    val error: String? = null,
+    // Display
     val displayName: String = "Speler",
-    val totalXp: Int = 0,
-    val highScoreStreak: Int = 0,
+    // Level / XP
     val level: Int = 1,
     val xpInCurrentLevel: Int = 0,
-    val xpForNextLevel: Int = 5000
+    val xpForNextLevel: Int = 100,
+    val xpFraction: Float = 0f,
+    val xpToNextLevel: Int = 100,
+    // Stats
+    val highScoreStreak: Int = 0
 )
 
-class HomeViewModel(private val profileRepository: ProfileRepository) : ViewModel() {
+class HomeViewModel(
+    private val profileRepository: ProfileRepository
+) : ViewModel() {
+
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
@@ -28,47 +37,36 @@ class HomeViewModel(private val profileRepository: ProfileRepository) : ViewMode
         loadProfile()
     }
 
-    private fun loadProfile() {
+    fun loadProfile() {
         viewModelScope.launch {
-            profileRepository.getCurrentUserProfile().onSuccess { profile ->
-                val levelInfo = calculateLevel(profile.totalXp)
-                _uiState.value = _uiState.value.copy(
-                    profile = profile,
-                    isLoading = false,
-                    displayName = profile.username ?: "Speler",
-                    totalXp = profile.totalXp,
-                    highScoreStreak = profile.highScoreStreak,
-                    level = levelInfo.level,
-                    xpInCurrentLevel = levelInfo.xpInCurrentLevel,
-                    xpForNextLevel = levelInfo.xpForNextLevel
-                )
-            }.onFailure {
-                _uiState.value = _uiState.value.copy(isLoading = false)
-            }
+            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+
+            profileRepository.getCurrentUserProfile().fold(
+                onSuccess = { profile ->
+                    val xp      = profile.totalXp
+                    val level   = LevelSystem.levelFromXp(xp)
+                    val current = LevelSystem.xpForLevel(level)
+                    val next    = LevelSystem.xpForLevel(level + 1)
+
+                    _uiState.value = _uiState.value.copy(
+                        profile          = profile,
+                        isLoading        = false,
+                        displayName      = profile.username ?: "Speler",
+                        level            = level,
+                        xpInCurrentLevel = xp - current,
+                        xpForNextLevel   = next - current,
+                        xpFraction       = LevelSystem.progressFraction(xp),
+                        xpToNextLevel    = LevelSystem.xpToNextLevel(xp),
+                        highScoreStreak  = profile.highScoreStreak
+                    )
+                },
+                onFailure = { e ->
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        error     = e.message
+                    )
+                }
+            )
         }
     }
-
-    private fun calculateLevel(totalXp: Int): LevelInfo {
-        var remaining = totalXp
-        var level = 1
-        var xpForNext = 5000
-        var xpInCurrent = 0
-
-        while (remaining >= xpForNext) {
-            remaining -= xpForNext
-            level++
-            xpInCurrent = remaining
-            xpForNext = when {
-                level <= 5 -> 5000
-                level <= 10 -> 7500
-                level <= 20 -> 10000
-                else -> 15000
-            }
-        }
-        xpInCurrent = remaining
-
-        return LevelInfo(level, xpInCurrent, xpForNext)
-    }
-
-    data class LevelInfo(val level: Int, val xpInCurrentLevel: Int, val xpForNextLevel: Int)
 }
