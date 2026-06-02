@@ -2,8 +2,9 @@ package com.example.realitycheck.ui.game
 
 import com.example.realitycheck.data.model.Profile
 import com.example.realitycheck.data.repository.FakeAuthRepository
-import com.example.realitycheck.data.repository.FakeContentRepository
 import com.example.realitycheck.data.repository.FakeProfileRepository
+import com.example.realitycheck.data.repository.FakeContentRepository
+
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -30,6 +31,7 @@ class SpeedRunViewModelTest {
         authRepo = FakeAuthRepository()
         profileRepo = FakeProfileRepository(authRepo)
         contentRepo = FakeContentRepository()
+
     }
 
     @After
@@ -40,7 +42,10 @@ class SpeedRunViewModelTest {
     private fun createViewModel(): SpeedRunViewModel {
         authRepo.storedUserId = "test-user"
         profileRepo.profiles["test-user"] = Profile(id = "test-user")
-        val vm = SpeedRunViewModel(profileRepo, contentRepo)
+        val vm = SpeedRunViewModel(
+            profileRepository = profileRepo,
+            contentRepository = contentRepo
+        )
         vm.onGameOverDismissed()
         return vm
     }

@@ -26,46 +26,58 @@ class SupabaseContentRepository(
     private val randomize: Boolean = true
 ) : ContentRepository {
 
-    private val buffer   = mutableListOf<ContentItem>()
-    private val mutex    = Mutex()
+    private val buffer = mutableListOf<ContentItem>()
+    private val usedIds = mutableSetOf<String>()
+    private val mutex = Mutex()
     private var fetchJob: Job? = null
 
     override suspend fun getNextPair(): Result<Pair<ContentItem, ContentItem>> {
         mutex.withLock {
-            // Synchronous fetch if buffer is empty
-            if (buffer.size < 2) {
-                val newItems = try {
-                    fetchBatch()
-                } catch (e: Exception) {
-                    return Result.failure(e)
-                }
-                if (newItems.isEmpty()) {
-                    return Result.failure(Exception("No content available"))
-                }
-                buffer.addAll(if (randomize) newItems.shuffled() else newItems)
-            }
+
+            ensureBuffer()
 
             if (buffer.size < 2) {
-                return Result.failure(Exception("Not enough content to form a pair"))
+                return Result.failure(Exception("Not enough unique content available"))
             }
 
-            val pair = Pair(buffer.removeAt(0), buffer.removeAt(0))
+            val first = buffer.removeAt(0)
+            val second = buffer.removeAt(0)
 
-            // Trigger background pre-fetch whenever buffer falls to threshold
-            if (buffer.size <= threshold && fetchJob?.isActive != true) {
-                fetchJob = scope.launch {
-                    try {
-                        val more = fetchBatch()
-                        mutex.withLock {
-                            buffer.addAll(if (randomize) more.shuffled() else more)
-                        }
-                    } catch (_: Exception) {
-                        // Will retry next time buffer drops below threshold
+            usedIds.add(first.id)
+            usedIds.add(second.id)
+
+            triggerPrefetchIfNeeded()
+
+            return Result.success(first to second)
+        }
+    }
+
+    private suspend fun ensureBuffer() {
+        if (buffer.size >= 2) return
+
+        val newItems = fetchBatch().filter { it.id !in usedIds }
+
+        if (newItems.isEmpty()) {
+            usedIds.clear()
+            buffer.addAll(fetchBatch().shuffled())
+        } else {
+            buffer.addAll(if (randomize) newItems.shuffled() else newItems)
+        }
+    }
+
+    private fun triggerPrefetchIfNeeded() {
+        if (buffer.size <= threshold && fetchJob?.isActive != true) {
+            fetchJob = scope.launch {
+                try {
+                    val more = fetchBatch()
+                        .filter { it.id !in usedIds }
+
+                    mutex.withLock {
+                        buffer.addAll(if (randomize) more.shuffled() else more)
                     }
+                } catch (_: Exception) {
                 }
             }
-
-            return Result.success(pair)
         }
     }
 }
