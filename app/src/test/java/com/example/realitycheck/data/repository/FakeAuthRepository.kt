@@ -4,7 +4,7 @@ class FakeAuthRepository : AuthRepository {
     var storedUserId: String? = null
     var shouldFail = false
 
-    override suspend fun signUp(email: String, password: String): Result<String> {
+    override suspend fun signUp(email: String, password: String, username: String): Result<String> {
         if (shouldFail) return Result.failure(Exception("Signup failed"))
         val newId = "fake-user-id"
         storedUserId = newId
@@ -24,6 +24,10 @@ class FakeAuthRepository : AuthRepository {
     }
 
     override suspend fun resetPassword(email: String): Result<Unit> {
+        return Result.success(Unit)
+    }
+
+    override suspend fun updatePassword(newPassword: String): Result<Unit> {
         return Result.success(Unit)
     }
 

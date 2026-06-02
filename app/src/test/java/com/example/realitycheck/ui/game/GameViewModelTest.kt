@@ -147,6 +147,7 @@ class GameViewModelTest {
     @Test
     fun `correct onBothAnswer for BOTH_AI increases streak`() = runTest(testDispatcher) {
         val viewModel = createViewModel()
+        viewModel.setRulesMode(RulesMode.CHAOS)
         advanceUntilIdle()
 
         forceRoundType(viewModel, RoundType.BOTH_AI, this)
@@ -160,6 +161,7 @@ class GameViewModelTest {
     @Test
     fun `correct onBothAnswer for BOTH_REAL increases streak`() = runTest(testDispatcher) {
         val viewModel = createViewModel()
+        viewModel.setRulesMode(RulesMode.CHAOS)
         advanceUntilIdle()
 
         forceRoundType(viewModel, RoundType.BOTH_REAL, this)

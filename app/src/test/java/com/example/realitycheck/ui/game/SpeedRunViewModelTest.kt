@@ -8,6 +8,7 @@ import com.example.realitycheck.data.repository.FakeContentRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -50,9 +51,10 @@ class SpeedRunViewModelTest {
         return vm
     }
 
-    private fun forceRoundType(viewModel: SpeedRunViewModel, type: RoundType) {
+    private suspend fun forceRoundType(viewModel: SpeedRunViewModel, type: RoundType, scope: TestScope) {
         while (viewModel.uiState.value.roundType != type) {
             viewModel.loadNextRound()
+            scope.advanceUntilIdle()
         }
     }
 
@@ -66,7 +68,7 @@ class SpeedRunViewModelTest {
     fun `correct answer increases correct count`() = runTest(testDispatcher) {
         val viewModel = createViewModel()
 
-        forceRoundType(viewModel, RoundType.ONE_REAL)
+        forceRoundType(viewModel, RoundType.ONE_REAL, this)
         viewModel.onSelect(viewModel.uiState.value.isCorrectTop)
         advanceUntilIdle()
 
@@ -77,7 +79,7 @@ class SpeedRunViewModelTest {
     fun `wrong answer does not increase correct count`() = runTest(testDispatcher) {
         val viewModel = createViewModel()
 
-        forceRoundType(viewModel, RoundType.ONE_REAL)
+        forceRoundType(viewModel, RoundType.ONE_REAL, this)
         viewModel.onSelect(!viewModel.uiState.value.isCorrectTop)
         advanceUntilIdle()
 
@@ -88,17 +90,17 @@ class SpeedRunViewModelTest {
     fun `multiple correct answers increase count incrementally`() = runTest(testDispatcher) {
         val viewModel = createViewModel()
 
-        forceRoundType(viewModel, RoundType.ONE_REAL)
+        forceRoundType(viewModel, RoundType.ONE_REAL, this)
         viewModel.onSelect(viewModel.uiState.value.isCorrectTop)
         advanceUntilIdle()
         assertEquals(1, viewModel.currentCorrectCount.value)
 
-        forceRoundType(viewModel, RoundType.ONE_REAL)
+        forceRoundType(viewModel, RoundType.ONE_REAL, this)
         viewModel.onSelect(viewModel.uiState.value.isCorrectTop)
         advanceUntilIdle()
         assertEquals(2, viewModel.currentCorrectCount.value)
 
-        forceRoundType(viewModel, RoundType.ONE_REAL)
+        forceRoundType(viewModel, RoundType.ONE_REAL, this)
         viewModel.onSelect(viewModel.uiState.value.isCorrectTop)
         advanceUntilIdle()
         assertEquals(3, viewModel.currentCorrectCount.value)

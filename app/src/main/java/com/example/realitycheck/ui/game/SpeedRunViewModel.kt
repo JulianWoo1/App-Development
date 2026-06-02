@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlin.random.Random
 
 class SpeedRunViewModel(
     private val profileRepository: ProfileRepository,
@@ -52,41 +51,21 @@ class SpeedRunViewModel(
         _uiState.value = _uiState.value.copy(isLoading = true)
 
         viewModelScope.launch {
-            contentRepository.getNextPair().fold(
-                onSuccess = { (first, second) ->
-                    val topIsReal = Random.nextBoolean()
-                    val (realItem, aiItem) = if (!first.isAi) first to second else second to first
+            contentRepository.getNextPair().onSuccess { (first, second) ->
+                val topIsReal = (0..1).random() == 0
+                val (realItem, aiItem) = if (!first.isAi) first to second else second to first
 
-                    _uiState.value = _uiState.value.copy(
-                        topContent    = if (topIsReal) realItem.contentUrl else aiItem.contentUrl,
-                        bottomContent = if (topIsReal) aiItem.contentUrl else realItem.contentUrl,
-                        isCorrectTop  = topIsReal,
-                        isImageMode   = true,
-                        roundType     = RoundType.ONE_REAL,
-                        isLoading     = false,
-                        showOverlay   = false
-                    )
-                },
-                onFailure = { loadNextRoundFallback() }
-            )
+                _uiState.value = _uiState.value.copy(
+                    topContent    = if (topIsReal) realItem.contentUrl else aiItem.contentUrl,
+                    bottomContent = if (topIsReal) aiItem.contentUrl else realItem.contentUrl,
+                    isCorrectTop  = topIsReal,
+                    isImageMode   = true,
+                    roundType     = RoundType.ONE_REAL,
+                    isLoading     = false,
+                    showOverlay   = false
+                )
+            }
         }
-    }
-
-    private fun loadNextRoundFallback() {
-        val id    = (1..MAX_IMAGE_ID).random()
-        val real1 = "$BASE_URL/Real/$id.jpg"
-        val ai1   = "$BASE_URL/AI/$id.jpg"
-        val topIsReal = Random.nextBoolean()
-
-        _uiState.value = _uiState.value.copy(
-            topContent    = if (topIsReal) real1 else ai1,
-            bottomContent = if (topIsReal) ai1 else real1,
-            isCorrectTop  = topIsReal,
-            isImageMode   = true,
-            roundType     = RoundType.ONE_REAL,
-            isLoading     = false,
-            showOverlay   = false
-        )
     }
 
     fun onSelect(isTop: Boolean) {
@@ -122,9 +101,5 @@ class SpeedRunViewModel(
 
     fun onGameOverDismissed() { timerJob?.cancel() }
 
-    companion object {
-        private const val MAX_IMAGE_ID = 400
-        private const val BASE_URL =
-            "https://vxqxbbkokdmxgirkhttc.supabase.co/storage/v1/object/public/images"
-    }
+    companion object
 }
