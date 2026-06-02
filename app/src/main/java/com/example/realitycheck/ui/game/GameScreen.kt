@@ -89,6 +89,23 @@ fun GameScreen(
                     )
                 }
 
+                if (uiState.rulesMode == RulesMode.CHAOS) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = { onBothAnswer(true) },
+                            modifier = Modifier.weight(1f)
+                        ) { Text("Both AI") }
+
+                        Button(
+                            onClick = { onBothAnswer(false) },
+                            modifier = Modifier.weight(1f)
+                        ) { Text("Both Real") }
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
