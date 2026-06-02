@@ -24,6 +24,7 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var email by rememberSaveable { mutableStateOf("") }
+    var username by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var confirmPassword by rememberSaveable { mutableStateOf("") }
 
@@ -51,6 +52,14 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit) {
         Spacer(modifier = Modifier.height(16.dp))
 
         AuthTextField(
+            value = username,
+            onValueChange = { username = it },
+            label = "Username",
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+
+        AuthTextField(
             value = password,
             onValueChange = { password = it },
             label = "Password",
@@ -72,8 +81,12 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit) {
         AuthButton(
             text = "Register",
             onClick = {
-                if (email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
+                if (email.isEmpty() || username.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
                     Toast.makeText(context, "Please fill in all fields", Toast.LENGTH_SHORT).show()
+                    return@AuthButton
+                }
+                if (username.length < 3) {
+                    Toast.makeText(context, "Username must be at least 3 characters", Toast.LENGTH_SHORT).show()
                     return@AuthButton
                 }
                 if (password != confirmPassword) {
@@ -86,7 +99,7 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit) {
                 }
 
                 scope.launch {
-                    SupabaseModule.authRepository.signUp(email, password).fold(
+                    SupabaseModule.authRepository.signUp(email, password, username).fold(
                         onSuccess = {
                             Toast.makeText(context, "Registration successful! Please log in.", Toast.LENGTH_SHORT).show()
                             onNavigateToLogin()
