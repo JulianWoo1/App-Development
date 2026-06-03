@@ -96,4 +96,19 @@ class SupabaseProfileRepository(
             Result.failure(e)
         }
     }
+
+    override suspend fun getUserRankFromLeaderboard(): Result<Int> {
+        return try {
+            val userId = authRepository.getCurrentUserId()
+                ?: return Result.failure(Exception("No user logged in"))
+
+            val leaderboard = getTopProfiles(limit = 1000).getOrThrow()
+
+            val index = leaderboard.indexOfFirst { it.id == userId }
+
+            Result.success(if (index >= 0) index + 1 else 0)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }
