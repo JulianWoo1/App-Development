@@ -34,6 +34,8 @@ class SpeedRunViewModel(
         private set
 
     private var timerJob: Job? = null
+    private var revealJob: Job? = null
+    private var roundStartTime: Long = 0L
 
     init { loadNextRound() }
 
@@ -107,7 +109,7 @@ class SpeedRunViewModel(
         viewModelScope.launch {
             delay(600)
             if (correct) {
-                _correctCount.value++
+                _streak.value++
                 val xp = GameRewards.CORRECT_ANSWER_XP  // speed run uses base XP only
                 sessionXp += xp                          // ← accumulate session total
                 profileRepository.addXp(xp)
