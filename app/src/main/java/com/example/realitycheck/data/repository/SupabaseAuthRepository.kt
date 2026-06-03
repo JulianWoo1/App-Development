@@ -1,34 +1,31 @@
 package com.example.realitycheck.data.repository
 
-import com.example.realitycheck.data.model.Profile
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.gotrue.providers.builtin.Email
-import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 
 class SupabaseAuthRepository(private val supabaseClient: SupabaseClient) : AuthRepository {
     override suspend fun signUp(email: String, password: String, username: String): Result<String> {
         return try {
-            val user = supabaseClient.auth.signUpWith(Email) {
+            supabaseClient.auth.signUpWith(Email) {
                 this.email = email
                 this.password = password
                 data = buildJsonObject { put("username", JsonPrimitive(username)) }
             }
-            val userId = user?.id ?: throw Exception("User ID is null")
 
-            try {
-                supabaseClient.postgrest["profiles"].update({
-                    set("username", username)
-                }) {
-                    filter { eq("id", userId) }
-                }.decodeSingle<Profile>()
-            } catch (_: Exception) {
-                supabaseClient.postgrest["profiles"].insert(Profile(id = userId, username = username))
+            var userId = supabaseClient.auth.currentSessionOrNull()?.user?.id
+
+            if (userId == null) {
+                supabaseClient.auth.signInWith(Email) {
+                    this.email = email
+                    this.password = password
+                }
+                userId = supabaseClient.auth.currentSessionOrNull()?.user?.id
             }
 
-            Result.success(userId)
+            Result.success(userId ?: throw Exception("User ID is null"))
         } catch (e: Exception) {
             Result.failure(e)
         }
