@@ -14,41 +14,28 @@ import kotlinx.coroutines.launch
 
 class SpeedRunViewModel(
     private val profileRepository: ProfileRepository,
-    private val contentRepository: ContentRepository
+    private val contentRepository: ContentRepository,
+    private val onXpUpdated: () -> Unit = {}
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
-        GameUiState(mode = GameMode.SPEED, timeRemainingSeconds = 60)
+        GameUiState(mode = GameMode.SPEED, timeRemainingSeconds = REVEAL_SECONDS)
     )
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
 
-    private val _correctCount = MutableStateFlow(0)
-    val currentCorrectCount: StateFlow<Int> = _correctCount.asStateFlow()
+    private val _streak = MutableStateFlow(0)
+    val currentStreak: StateFlow<Int> = _streak.asStateFlow()
 
-    private var timerJob: Job? = null
+    private var revealJob: Job? = null
+    private var roundStartTime: Long = 0L
 
-    init {
-        startTimer()
-        loadNextRound()
-    }
-
-    private fun startTimer() {
-        timerJob = viewModelScope.launch {
-            while (isActive && (_uiState.value.timeRemainingSeconds ?: 0) > 0) {
-                delay(1000)
-                val remaining = (_uiState.value.timeRemainingSeconds ?: 0) - 1
-                _uiState.value = _uiState.value.copy(timeRemainingSeconds = remaining)
-            }
-            if (!_uiState.value.isGameOver) {
-                profileRepository.updateHighScore(_correctCount.value)
-                _uiState.value = _uiState.value.copy(isGameOver = true)
-            }
-        }
-    }
+    init { loadNextRound() }
 
     fun loadNextRound() {
         if (_uiState.value.isGameOver) return
-        _uiState.value = _uiState.value.copy(isLoading = true)
+        revealJob?.cancel()
+        _uiState.value = _uiState.value.copy(isLoading = true, imagesHidden = false)
+        roundStartTime = System.currentTimeMillis()
 
         viewModelScope.launch {
             contentRepository.getNextPair().onSuccess { (first, second) ->
@@ -56,13 +43,34 @@ class SpeedRunViewModel(
                 val (realItem, aiItem) = if (!first.isAi) first to second else second to first
 
                 _uiState.value = _uiState.value.copy(
-                    topContent    = if (topIsReal) realItem.contentUrl else aiItem.contentUrl,
-                    bottomContent = if (topIsReal) aiItem.contentUrl else realItem.contentUrl,
-                    isCorrectTop  = topIsReal,
-                    isImageMode   = true,
-                    roundType     = RoundType.ONE_REAL,
-                    isLoading     = false,
-                    showOverlay   = false
+                    topContent           = if (topIsReal) realItem.contentUrl else aiItem.contentUrl,
+                    bottomContent        = if (topIsReal) aiItem.contentUrl else realItem.contentUrl,
+                    isCorrectTop         = topIsReal,
+                    isImageMode          = true,
+                    roundType            = RoundType.ONE_REAL,
+                    isLoading            = false,
+                    showOverlay          = false,
+                    timeRemainingSeconds = REVEAL_SECONDS
+                )
+                startRevealTimer()
+            }
+        }
+    }
+
+    private fun startRevealTimer() {
+        revealJob = viewModelScope.launch {
+            var remaining = REVEAL_SECONDS
+            while (isActive && remaining > 0) {
+                delay(1000)
+                remaining--
+                _uiState.value = _uiState.value.copy(timeRemainingSeconds = remaining)
+            }
+            if (!_uiState.value.showOverlay && !_uiState.value.isGameOver) {
+                _uiState.value = _uiState.value.copy(
+                    imagesHidden        = true,
+                    topContent          = null,
+                    bottomContent       = null,
+                    timeRemainingSeconds = null
                 )
             }
         }
@@ -70,16 +78,14 @@ class SpeedRunViewModel(
 
     fun onSelect(isTop: Boolean) {
         if (_uiState.value.showOverlay || _uiState.value.isGameOver) return
-        val correct = when (_uiState.value.roundType) {
-            RoundType.ONE_REAL  -> isTop == _uiState.value.isCorrectTop
-            RoundType.BOTH_AI   -> false
-            RoundType.BOTH_REAL -> false
-        }
+        revealJob?.cancel()
+        val correct = isTop == _uiState.value.isCorrectTop
         handleResult(correct, isTop)
     }
 
     fun onBothAnswer(guessedAi: Boolean) {
         if (_uiState.value.showOverlay || _uiState.value.isGameOver) return
+        revealJob?.cancel()
         val correct = when (_uiState.value.roundType) {
             RoundType.ONE_REAL  -> false
             RoundType.BOTH_AI   -> guessedAi
@@ -93,13 +99,27 @@ class SpeedRunViewModel(
             showOverlay = true, lastResultCorrect = correct, tappedTop = tappedTop
         )
         viewModelScope.launch {
-            delay(600)
-            if (correct) _correctCount.value++
-            loadNextRound()
+            delay(1000)
+            if (correct) {
+                _streak.value++
+                val answerTime = System.currentTimeMillis() - roundStartTime
+                val speedXp = GameRewards.speedBonus(answerTime, REVEAL_SECONDS * 1000L)
+                val xp = GameRewards.CORRECT_ANSWER_XP + GameRewards.streakBonus(_streak.value) + speedXp
+                _uiState.value = _uiState.value.copy(earnedXp = xp)
+                profileRepository.addXp(xp).onSuccess { onXpUpdated() }
+                delay(800)
+                _uiState.value = _uiState.value.copy(earnedXp = 0)
+                loadNextRound()
+            } else {
+                profileRepository.updateHighScore(_streak.value)
+                _uiState.value = _uiState.value.copy(isGameOver = true)
+            }
         }
     }
 
-    fun onGameOverDismissed() { timerJob?.cancel() }
+    fun onGameOverDismissed() { revealJob?.cancel() }
 
-    companion object
+    companion object {
+        private const val REVEAL_SECONDS = 3
+    }
 }

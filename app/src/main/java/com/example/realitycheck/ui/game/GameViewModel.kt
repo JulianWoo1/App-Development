@@ -40,7 +40,8 @@ data class GameUiState(
     val isLoading: Boolean = true,
 
     val earnedXp: Int = 0,
-    val timeRemainingSeconds: Int? = null
+    val timeRemainingSeconds: Int? = null,
+    val imagesHidden: Boolean = false
 )
 
 class GameViewModel(

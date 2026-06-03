@@ -130,25 +130,27 @@ fun MainNavHost() {
                             override fun <T : ViewModel> create(modelClass: Class<T>): T =
                                 SpeedRunViewModel(
                                     profileRepository = SupabaseModule.profileRepository,
-                                    contentRepository = SupabaseModule.contentRepository
+                                    contentRepository = SupabaseModule.contentRepository,
+                                    onXpUpdated       = { homeViewModel.loadProfile() }
                                 ) as T
                         }
                     )
-                    val state        by speedVm.uiState.collectAsState()
-                    val correctCount by speedVm.currentCorrectCount.collectAsState()
+                    val state by speedVm.uiState.collectAsState()
+                    val streak by speedVm.currentStreak.collectAsState()
 
                     LaunchedEffect(state.isGameOver) {
                         if (state.isGameOver) {
-                            GameResultHolder.score = correctCount.toString()
+                            GameResultHolder.score   = streak.toString()
+                            GameResultHolder.xpGained = state.earnedXp
                             navController.navigate("gameover") { popUpTo("home") { inclusive = false } }
                         }
                     }
 
                     GameScreen(
                         uiState              = state,
-                        streak               = correctCount,
+                        streak               = streak,
                         timeRemainingSeconds = state.timeRemainingSeconds,
-                        scoreLabel           = "correct",
+                        scoreLabel           = "streak",
                         onSelect             = { speedVm.onSelect(it) },
                         onBothAnswer         = { speedVm.onBothAnswer(it) },
                         onGameOverDismissed  = { speedVm.onGameOverDismissed(); navController.popBackStack() }
