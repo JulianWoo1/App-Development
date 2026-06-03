@@ -26,8 +26,14 @@ class SpeedRunViewModel(
     private val _streak = MutableStateFlow(0)
     val currentStreak: StateFlow<Int> = _streak.asStateFlow()
 
-    private var revealJob: Job? = null
-    private var roundStartTime: Long = 0L
+    /**
+     * Total XP earned during this speed-run session.
+     * Read by [MainNavHost] just before navigating to GameOverScreen.
+     */
+    var sessionXp: Int = 0
+        private set
+
+    private var timerJob: Job? = null
 
     init { loadNextRound() }
 
@@ -99,21 +105,14 @@ class SpeedRunViewModel(
             showOverlay = true, lastResultCorrect = correct, tappedTop = tappedTop
         )
         viewModelScope.launch {
-            delay(1000)
+            delay(600)
             if (correct) {
-                _streak.value++
-                val answerTime = System.currentTimeMillis() - roundStartTime
-                val speedXp = GameRewards.speedBonus(answerTime, REVEAL_SECONDS * 1000L)
-                val xp = GameRewards.CORRECT_ANSWER_XP + GameRewards.streakBonus(_streak.value) + speedXp
-                _uiState.value = _uiState.value.copy(earnedXp = xp)
-                profileRepository.addXp(xp).onSuccess { onXpUpdated() }
-                delay(800)
-                _uiState.value = _uiState.value.copy(earnedXp = 0)
-                loadNextRound()
-            } else {
-                profileRepository.updateHighScore(_streak.value)
-                _uiState.value = _uiState.value.copy(isGameOver = true)
+                _correctCount.value++
+                val xp = GameRewards.CORRECT_ANSWER_XP  // speed run uses base XP only
+                sessionXp += xp                          // ← accumulate session total
+                profileRepository.addXp(xp)
             }
+            loadNextRound()
         }
     }
 

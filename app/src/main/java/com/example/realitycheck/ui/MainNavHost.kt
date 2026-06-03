@@ -29,12 +29,17 @@ import com.example.realitycheck.ui.onboarding.OnboardingScreen
 import com.example.realitycheck.ui.profile.ProfileScreen
 import com.example.realitycheck.ui.scores.ScoresScreen
 
+/**
+ * Holds the results of the most recently completed game session.
+ * Populated just before navigating to the GameOverScreen.
+ */
 object GameResultHolder {
-    var score: String    = "0"
-    var accuracy: String = "0%"
-    var fastestTime: String = "0s"
-    var rank: String     = "#0"
-    var xpGained: Int    = 0
+    /** Final streak (normal mode) or correct-answer count (speed run). */
+    var streak: Int = 0
+    /** Total XP earned during this session. */
+    var xpGained: Int = 0
+    /** Deprecated string alias kept for compatibility — mirrors [streak]. */
+    val score: String get() = streak.toString()
 }
 
 private data class BottomNavItem(val route: String, val label: String, val icon: ImageVector)
@@ -140,8 +145,8 @@ fun MainNavHost() {
 
                     LaunchedEffect(state.isGameOver) {
                         if (state.isGameOver) {
-                            GameResultHolder.score   = streak.toString()
-                            GameResultHolder.xpGained = state.earnedXp
+                            GameResultHolder.streak   = correctCount
+                            GameResultHolder.xpGained = speedVm.sessionXp
                             navController.navigate("gameover") { popUpTo("home") { inclusive = false } }
                         }
                     }
@@ -179,8 +184,8 @@ fun MainNavHost() {
 
                     LaunchedEffect(state.isGameOver) {
                         if (state.isGameOver) {
-                            GameResultHolder.score   = streak.toString()
-                            GameResultHolder.xpGained = state.earnedXp
+                            GameResultHolder.streak   = streak
+                            GameResultHolder.xpGained = gameVm.sessionXp
                             navController.navigate("gameover") { popUpTo("home") { inclusive = false } }
                         }
                     }
@@ -199,14 +204,11 @@ fun MainNavHost() {
             composable("gameover") {
                 val homeState by homeViewModel.uiState.collectAsState()
                 GameOverScreen(
-                    score       = GameResultHolder.score,
-                    accuracy    = GameResultHolder.accuracy,
-                    fastestTime = GameResultHolder.fastestTime,
-                    bestRank    = GameResultHolder.rank,
-                    level       = homeState.level,
-                    currentXp   = homeState.xpInCurrentLevel,
-                    maxXp       = homeState.xpForNextLevel,
-                    gainedXp    = GameResultHolder.xpGained,
+                    streak    = GameResultHolder.streak,
+                    xpGained  = GameResultHolder.xpGained,
+                    level     = homeState.level,
+                    currentXp = homeState.xpInCurrentLevel,
+                    maxXp     = homeState.xpForNextLevel,
                     onPlayAgain = { navController.navigate("home") { popUpTo("gameover") { inclusive = true } } },
                     onHome      = { navController.navigate("home") { popUpTo("gameover") { inclusive = true } } }
                 )

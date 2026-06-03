@@ -56,6 +56,13 @@ class GameViewModel(
     private val _streak = MutableStateFlow(0)
     val currentStreak: StateFlow<Int> = _streak.asStateFlow()
 
+    /**
+     * Total XP accumulated during this session.
+     * Read by [MainNavHost] just before navigating to GameOverScreen.
+     */
+    var sessionXp: Int = 0
+        private set
+
     private val aiTexts = listOf(
         "AI generates synthetic content",
         "Neural networks process patterns",
@@ -99,7 +106,7 @@ class GameViewModel(
     private fun loadImageRound() {
         _uiState.value = _uiState.value.copy(isLoading = true)
         viewModelScope.launch {
-            when (val type = allowedRoundTypes().random()) {
+            when (allowedRoundTypes().random()) {
                 RoundType.ONE_REAL  -> loadOneRealRound()
                 RoundType.BOTH_AI   -> loadBothSameRound(wantAi = true)
                 RoundType.BOTH_REAL -> loadBothSameRound(wantAi = false)
@@ -207,6 +214,7 @@ class GameViewModel(
             if (correct) {
                 _streak.value++
                 val xp = GameRewards.CORRECT_ANSWER_XP + GameRewards.streakBonus(_streak.value)
+                sessionXp += xp                                        // ← accumulate session total
                 _uiState.value = _uiState.value.copy(earnedXp = xp)
                 profileRepository.addXp(xp).onSuccess { onXpUpdated() }
                 delay(800)
