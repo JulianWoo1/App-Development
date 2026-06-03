@@ -145,7 +145,7 @@ fun MainNavHost() {
 
                     LaunchedEffect(state.isGameOver) {
                         if (state.isGameOver) {
-                            GameResultHolder.streak   = correctCount
+                            GameResultHolder.streak   = streak
                             GameResultHolder.xpGained = speedVm.sessionXp
                             navController.navigate("gameover") { popUpTo("home") { inclusive = false } }
                         }
