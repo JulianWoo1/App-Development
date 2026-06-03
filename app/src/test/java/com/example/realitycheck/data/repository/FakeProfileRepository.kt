@@ -47,6 +47,14 @@ class FakeProfileRepository(private val authRepository: FakeAuthRepository = Fak
         return Result.success(Unit)
     }
 
+    override suspend fun getUserRankFromLeaderboard(): Result<Int> {
+        val userId = authRepository.getCurrentUserId()
+            ?: return Result.failure(Exception("No user logged in"))
+        val leaderboard = getTopProfiles(limit = 1000).getOrThrow()
+        val index = leaderboard.indexOfFirst { it.id == userId }
+        return Result.success(if (index >= 0) index + 1 else 0)
+    }
+
     override suspend fun updateHighScore(newStreak: Int): Result<Profile> {
         val currentProfileResult = getCurrentUserProfile()
         if (currentProfileResult.isFailure) return currentProfileResult
