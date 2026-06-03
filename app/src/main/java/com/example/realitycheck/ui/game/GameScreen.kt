@@ -9,12 +9,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.realitycheck.di.ImageLoaderFactory
 
@@ -211,7 +215,7 @@ private fun GameContentBox(
     content: String?,
     isImage: Boolean,
     onClick: () -> Unit,
-    onImageClick: (String) -> Unit,
+    onImageClick: (String) -> Unit = {},
     enabled: Boolean,
     showOverlay: Boolean,
     isCorrect: Boolean,
@@ -222,23 +226,17 @@ private fun GameContentBox(
         modifier = modifier
             .fillMaxWidth()
             .background(CardBg)
-            .clickable(enabled = enabled) {
-                onClick()
-            }
+            .clickable(enabled = enabled) { onClick() }
     ) {
-
-        if (isImage) {
-
+        if (isImage && content != null) {
             Box(modifier = Modifier.fillMaxSize()) {
-
                 AsyncImage(
-                    model = content,
+                    model              = content,
                     contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                    imageLoader = imageLoader
+                    modifier           = Modifier.fillMaxSize(),
+                    contentScale       = ContentScale.Crop,
+                    imageLoader        = imageLoader
                 )
-
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
@@ -248,9 +246,7 @@ private fun GameContentBox(
                             color = Color.Black.copy(alpha = 0.45f),
                             shape = RoundedCornerShape(12.dp)
                         )
-                        .clickable(enabled = content != null) {
-                            content?.let(onImageClick)
-                        },
+                        .clickable(enabled = true) { onImageClick(content) },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -261,29 +257,25 @@ private fun GameContentBox(
                     )
                 }
             }
-
-        } else {
-
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
+        } else if (isImage) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
-                    text = content ?: "",
-                    color = Color.White,
-                    style = MaterialTheme.typography.bodyLarge
+                    text      = "?",
+                    color     = Color.White.copy(alpha = 0.3f),
+                    fontSize  = 64.sp,
+                    textAlign = TextAlign.Center
                 )
             }
+        } else {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(content ?: "", color = Color.White, style = MaterialTheme.typography.bodyLarge)
+            }
         }
-
         if (showOverlay) {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        if (isCorrect) Color.Green.copy(alpha = 0.5f)
-                        else Color.Red.copy(alpha = 0.5f)
-                    )
+                modifier = Modifier.fillMaxSize().background(
+                    if (isCorrect) Color.Green.copy(alpha = 0.5f) else Color.Red.copy(alpha = 0.5f)
+                )
             )
         }
     }

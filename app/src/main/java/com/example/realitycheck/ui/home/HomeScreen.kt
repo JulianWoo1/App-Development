@@ -156,7 +156,7 @@ fun HomeScreen(
         GameModeCard(
             icon      = "\u26A1",
             title     = "Speed Run",
-            subtitle  = "Answer as many as you can in 60s",
+            subtitle  = "Quickly spot real vs AI before images vanish",
             badge     = null,
             badgeColor = null,
             onClick   = { onStartGame(GameMode.SPEED, RulesMode.CLASSIC) } // speed always classic

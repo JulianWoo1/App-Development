@@ -16,4 +16,9 @@ object GameRewards {
     fun difficultyBonus(difficulty: Int): Int {
         return difficulty * 5
     }
+
+    fun speedBonus(answerTimeMs: Long, totalRevealMs: Long): Int {
+        val fraction = 1f - (answerTimeMs.toFloat() / totalRevealMs.toFloat()).coerceIn(0f, 1f)
+        return (15 * fraction).toInt()
+    }
 }

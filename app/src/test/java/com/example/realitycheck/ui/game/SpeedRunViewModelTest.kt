@@ -15,6 +15,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -32,7 +33,6 @@ class SpeedRunViewModelTest {
         authRepo = FakeAuthRepository()
         profileRepo = FakeProfileRepository(authRepo)
         contentRepo = FakeContentRepository()
-
     }
 
     @After
@@ -51,58 +51,57 @@ class SpeedRunViewModelTest {
         return vm
     }
 
-    private suspend fun forceRoundType(viewModel: SpeedRunViewModel, type: RoundType, scope: TestScope) {
-        while (viewModel.uiState.value.roundType != type) {
-            viewModel.loadNextRound()
-            scope.advanceUntilIdle()
-        }
+    @Test
+    fun `streak starts at 0`() = runTest(testDispatcher) {
+        val viewModel = createViewModel()
+        assertEquals(0, viewModel.currentStreak.value)
     }
 
     @Test
-    fun `correct count starts at 0`() = runTest(testDispatcher) {
-        val viewModel = createViewModel()
-        assertEquals(0, viewModel.currentCorrectCount.value)
-    }
-
-    @Test
-    fun `correct answer increases correct count`() = runTest(testDispatcher) {
+    fun `correct answer increases streak`() = runTest(testDispatcher) {
         val viewModel = createViewModel()
 
-        forceRoundType(viewModel, RoundType.ONE_REAL, this)
         viewModel.onSelect(viewModel.uiState.value.isCorrectTop)
         advanceUntilIdle()
 
-        assertEquals(1, viewModel.currentCorrectCount.value)
+        assertEquals(1, viewModel.currentStreak.value)
     }
 
     @Test
-    fun `wrong answer does not increase correct count`() = runTest(testDispatcher) {
+    fun `wrong answer does not increase streak and ends game`() = runTest(testDispatcher) {
         val viewModel = createViewModel()
 
-        forceRoundType(viewModel, RoundType.ONE_REAL, this)
         viewModel.onSelect(!viewModel.uiState.value.isCorrectTop)
         advanceUntilIdle()
 
-        assertEquals(0, viewModel.currentCorrectCount.value)
+        assertEquals(0, viewModel.currentStreak.value)
+        assertTrue(viewModel.uiState.value.isGameOver)
     }
 
     @Test
-    fun `multiple correct answers increase count incrementally`() = runTest(testDispatcher) {
+    fun `multiple correct answers increase streak incrementally`() = runTest(testDispatcher) {
         val viewModel = createViewModel()
 
-        forceRoundType(viewModel, RoundType.ONE_REAL, this)
         viewModel.onSelect(viewModel.uiState.value.isCorrectTop)
         advanceUntilIdle()
-        assertEquals(1, viewModel.currentCorrectCount.value)
+        assertEquals(1, viewModel.currentStreak.value)
 
-        forceRoundType(viewModel, RoundType.ONE_REAL, this)
         viewModel.onSelect(viewModel.uiState.value.isCorrectTop)
         advanceUntilIdle()
-        assertEquals(2, viewModel.currentCorrectCount.value)
+        assertEquals(2, viewModel.currentStreak.value)
 
-        forceRoundType(viewModel, RoundType.ONE_REAL, this)
         viewModel.onSelect(viewModel.uiState.value.isCorrectTop)
         advanceUntilIdle()
-        assertEquals(3, viewModel.currentCorrectCount.value)
+        assertEquals(3, viewModel.currentStreak.value)
+    }
+
+    @Test
+    fun `wrong answer triggers game over immediately`() = runTest(testDispatcher) {
+        val viewModel = createViewModel()
+
+        viewModel.onSelect(!viewModel.uiState.value.isCorrectTop)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.isGameOver)
     }
 }
