@@ -24,45 +24,47 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 // ===== COLORS =====
-private val Bg = Color(0xFF050505)
-private val CardBg = Color(0xFF0D0D0D)
-private val Purple = Color(0xFF5B2EFF)
-private val Pink = Color(0xFFFF4D8D)
-private val Orange = Color(0xFFFF8A3D)
-private val Gray = Color(0xFFA0A0A0)
-private val Stroke = Color(0xFF1F1F1F)
+private val Bg         = Color(0xFF050505)
+private val CardBg     = Color(0xFF0D0D0D)
+private val Purple     = Color(0xFF5B2EFF)
+private val Pink       = Color(0xFFFF4D8D)
+private val Orange     = Color(0xFFFF8A3D)
+private val Gray       = Color(0xFFA0A0A0)
+private val Stroke     = Color(0xFF1F1F1F)
 private val ProgressBg = Color(0xFF222222)
 
+/**
+ * End-of-session summary screen.
+ *
+ * @param streak    Final streak (or correct-answer count in speed-run mode).
+ * @param xpGained  Total XP earned during this session.
+ * @param level     Player's current level (after XP has been applied).
+ * @param currentXp XP within the current level.
+ * @param maxXp     XP required to reach the next level.
+ */
 @Composable
 fun GameOverScreen(
-    score: String = "2.340",
-    accuracy: String = "74%",
-    fastestTime: String = "1.4s",
-    bestRank: String = "#18",
-    level: Int = 23,
-    currentXp: Int = 2820,
-    maxXp: Int = 5000,
-    gainedXp: Int = 230,
+    streak: Int = 0,
+    xpGained: Int = 0,
+    level: Int = 1,
+    currentXp: Int = 0,
+    maxXp: Int = 100,
     onPlayAgain: () -> Unit,
     onHome: () -> Unit
-)
-{
+) {
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Bg)
-    )
-    {
-
+    ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
-        )
-        {
+        ) {
 
             Spacer(modifier = Modifier.height(22.dp))
 
@@ -72,29 +74,20 @@ fun GameOverScreen(
                     .size(140.dp)
                     .background(
                         brush = Brush.radialGradient(
-                            colors = listOf(
-                                Color(0xFF42124B),
-                                Color(0xFF101010)
-                            ),
+                            colors = listOf(Color(0xFF42124B), Color(0xFF101010)),
                             radius = 220f
                         ),
                         shape = CircleShape
                     ),
                 contentAlignment = Alignment.Center
-            )
-            {
+            ) {
                 Box(
                     modifier = Modifier
                         .size(74.dp)
                         .clip(CircleShape)
-                        .background(
-                            Brush.linearGradient(
-                                colors = listOf(Pink, Orange)
-                            )
-                        ),
+                        .background(Brush.linearGradient(colors = listOf(Pink, Orange))),
                     contentAlignment = Alignment.Center
-                )
-                {
+                ) {
                     Text(
                         text = "✕",
                         color = Color.White,
@@ -112,7 +105,6 @@ fun GameOverScreen(
                 color = Color.White,
                 modifier = Modifier.padding(top = 10.dp)
             )
-
             Text(
                 text = "Better luck next time!",
                 color = Gray,
@@ -129,53 +121,50 @@ fun GameOverScreen(
                 shape = RoundedCornerShape(26.dp),
                 colors = CardDefaults.cardColors(containerColor = CardBg),
                 border = BorderStroke(1.dp, Stroke)
-            )
-            {
+            ) {
                 Column(
                     modifier = Modifier.padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
-                )
-                {
-
-                    Text("Your score", color = Gray, fontSize = 16.sp)
+                ) {
+                    Text("Your streak", color = Gray, fontSize = 16.sp)
 
                     Text(
-                        text = score,
+                        text = streak.toString(),
                         color = Color.White,
-                        fontSize = 48.sp,
+                        fontSize = 64.sp,
                         fontWeight = FontWeight.ExtraBold,
                         modifier = Modifier.padding(top = 4.dp)
                     )
 
                     Spacer(modifier = Modifier.height(6.dp))
 
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(50))
-                            .background(
-                                Brush.horizontalGradient(
-                                    colors = listOf(
-                                        Color(0xFF4A1DFF),
-                                        Color(0xFF2E146B)
+                    // Streak milestone badge — shown when the player did reasonably well
+                    if (streak >= 3) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(50))
+                                .background(
+                                    Brush.horizontalGradient(
+                                        colors = listOf(Color(0xFF4A1DFF), Color(0xFF2E146B))
                                     )
                                 )
+                        ) {
+                            Text(
+                                text = when {
+                                    streak >= 20 -> "Legendary streak 🏆"
+                                    streak >= 10 -> "Hot streak 🔥"
+                                    else         -> "Nice streak ⚡"
+                                },
+                                color = Color(0xFFBFA6FF),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                modifier = Modifier.padding(horizontal = 18.dp, vertical = 6.dp)
                             )
-                    )
-                    {
-                        Text(
-                            text = "New record 🏆",
-                            color = Color(0xFFBFA6FF),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp,
-                            modifier = Modifier.padding(
-                                horizontal = 18.dp,
-                                vertical = 6.dp
-                            )
-                        )
+                        }
+                        Spacer(modifier = Modifier.height(18.dp))
                     }
 
-                    Spacer(modifier = Modifier.height(18.dp))
-
+                    // ── Session stat row ─────────────────────────────────────
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -184,11 +173,22 @@ fun GameOverScreen(
                             .border(1.dp, Stroke, RoundedCornerShape(20.dp))
                             .padding(vertical = 16.dp),
                         horizontalArrangement = Arrangement.SpaceEvenly
-                    )
-                    {
-                        StatItem("🎯", accuracy, "Accuracy")
-                        StatItem("⚡", fastestTime, "Fastest")
-                        StatItem("🏆", bestRank, "Best rank")
+                    ) {
+                        StatItem(
+                            icon  = "🎯",
+                            value = streak.toString(),
+                            label = "Streak"
+                        )
+                        StatItem(
+                            icon  = "⚡",
+                            value = "+$xpGained",
+                            label = "XP earned"
+                        )
+                        StatItem(
+                            icon  = "🏅",
+                            value = "Lv $level",
+                            label = "Level"
+                        )
                     }
                 }
             }
@@ -201,25 +201,21 @@ fun GameOverScreen(
                 shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(containerColor = CardBg),
                 border = BorderStroke(1.dp, Stroke)
-            )
-            {
-                Column(modifier = Modifier.padding(20.dp))
-                {
+            ) {
+                Column(modifier = Modifier.padding(20.dp)) {
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
-                    )
-                    {
+                    ) {
                         Text(
                             text = "Level $level",
                             color = Color.White,
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp
                         )
-
                         Text(
-                            text = "+$gainedXp XP",
+                            text = "+$xpGained XP",
                             color = Purple,
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp
@@ -234,8 +230,7 @@ fun GameOverScreen(
                             .height(8.dp)
                             .clip(RoundedCornerShape(50))
                             .background(ProgressBg)
-                    )
-                    {
+                    ) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth(
@@ -271,22 +266,18 @@ fun GameOverScreen(
                     .fillMaxWidth()
                     .height(58.dp),
                 contentPadding = PaddingValues(0.dp)
-            )
-            {
+            ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center,
                     modifier = Modifier.fillMaxSize()
-                )
-                {
+                ) {
                     Text(
                         text = "Play again",
                         style = MaterialTheme.typography.titleLarge,
                         color = Color.White
                     )
-
                     Spacer(modifier = Modifier.width(12.dp))
-
                     Icon(
                         imageVector = Icons.Default.Refresh,
                         contentDescription = "Retry",
@@ -303,27 +294,21 @@ fun GameOverScreen(
                 onClick = onHome,
                 shape = RoundedCornerShape(24.dp),
                 border = BorderStroke(1.dp, Stroke),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = Color.White
-                ),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(58.dp)
-            )
-            {
+            ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
-                )
-                {
+                ) {
                     Text(
                         text = "Back to home",
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp
                     )
-
                     Spacer(modifier = Modifier.width(10.dp))
-
                     Icon(
                         imageVector = Icons.Default.Home,
                         contentDescription = null,
@@ -339,23 +324,17 @@ fun GameOverScreen(
 }
 
 @Composable
-private fun StatItem(icon: String, value: String, label: String)
-{
-    Column(horizontalAlignment = Alignment.CenterHorizontally)
-    {
+private fun StatItem(icon: String, value: String, label: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(icon, fontSize = 22.sp)
-
         Spacer(modifier = Modifier.height(8.dp))
-
         Text(
             text = value,
             color = Color.White,
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold
         )
-
         Spacer(modifier = Modifier.height(3.dp))
-
         Text(label, color = Gray, fontSize = 14.sp)
     }
 }

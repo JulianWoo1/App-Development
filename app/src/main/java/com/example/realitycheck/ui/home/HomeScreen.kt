@@ -138,7 +138,7 @@ fun HomeScreen(
         GameModeCard(
             icon      = "\uD83D\uDDBC️",
             title     = "Image Mode",
-            subtitle  = "The classic mode",
+            subtitle  = "Pick which is ai",
             badge     = "Popular",
             badgeColor = Color(0xFF1DB954),
             onClick   = { onStartGame(GameMode.IMAGE, selectedRules) }

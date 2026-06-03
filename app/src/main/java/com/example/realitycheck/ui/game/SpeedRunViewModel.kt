@@ -25,6 +25,13 @@ class SpeedRunViewModel(
     private val _correctCount = MutableStateFlow(0)
     val currentCorrectCount: StateFlow<Int> = _correctCount.asStateFlow()
 
+    /**
+     * Total XP earned during this speed-run session.
+     * Read by [MainNavHost] just before navigating to GameOverScreen.
+     */
+    var sessionXp: Int = 0
+        private set
+
     private var timerJob: Job? = null
 
     init {
@@ -94,7 +101,12 @@ class SpeedRunViewModel(
         )
         viewModelScope.launch {
             delay(600)
-            if (correct) _correctCount.value++
+            if (correct) {
+                _correctCount.value++
+                val xp = GameRewards.CORRECT_ANSWER_XP  // speed run uses base XP only
+                sessionXp += xp                          // ← accumulate session total
+                profileRepository.addXp(xp)
+            }
             loadNextRound()
         }
     }
