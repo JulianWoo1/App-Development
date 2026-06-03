@@ -12,25 +12,19 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.realitycheck.data.di.SupabaseModule
 import com.example.realitycheck.ui.components.XpProgressBar
-import com.example.realitycheck.ui.game.LevelSystem
 
 private val Background = Color(0xFF050505)
 private val CardBg = Color(0xFF0D0D0D)
 private val Purple = Color(0xFF5B2EFF)
-private val SubtitleGray = Color(0xFF9A9A9A)
 private val WelcomeGray = Color(0xFF8E8E93)
-private val ProgressBg = Color(0xFF252525)
 private val Gold = Color(0xFFD4AF37)
 private val Green = Color(0xFF6DDC6D)
 private val Orange = Color(0xFFFF8A3D)
@@ -58,13 +52,12 @@ fun ProfileScreen() {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        // ── Header ─────────────────────────────────────────────
+        // ── HEADER ─────────────────────────────
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.Top
         ) {
 
-            // Avatar
             Box(
                 modifier = Modifier
                     .size(74.dp)
@@ -76,7 +69,7 @@ fun ProfileScreen() {
                     style = MaterialTheme.typography.headlineMedium
                 )
 
-                // Level badge
+                // LEVEL BADGE
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
@@ -86,7 +79,7 @@ fun ProfileScreen() {
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "23",
+                        text = "${state.level}",
                         color = Color.White,
                         style = MaterialTheme.typography.labelMedium
                     )
@@ -114,12 +107,22 @@ fun ProfileScreen() {
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    ProfileBadge("🔥", "7 streak", Orange)
-                    ProfileBadge("🏆", "#14 ranked", Gold)
+
+                    ProfileBadge(
+                        emoji = "🔥",
+                        text = "${profile?.highScoreStreak ?: 0} streak",
+                        color = Orange
+                    )
+
+                    ProfileBadge(
+                        emoji = "🏆",
+                        text = "#${state.rank} rank",
+                        color = Gold
+                    )
                 }
             }
 
-            IconButton(onClick = { /* settings */ }) {
+            IconButton(onClick = { viewModel.openUsernameDialog() }) {
                 Icon(
                     imageVector = Icons.Outlined.Settings,
                     contentDescription = null,
@@ -128,9 +131,33 @@ fun ProfileScreen() {
             }
         }
 
+        if (state.isEditingUsername) {
+            AlertDialog(
+                onDismissRequest = { viewModel.closeUsernameDialog() },
+                title = { Text("Change username") },
+                text = {
+                    OutlinedTextField(
+                        value = state.usernameInput,
+                        onValueChange = { viewModel.onUsernameChange(it) },
+                        singleLine = true
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = { viewModel.saveUsername() }) {
+                        Text("Save")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { viewModel.closeUsernameDialog() }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
         Spacer(modifier = Modifier.height(26.dp))
 
-        // ── XP Card ─────────────────────────────────────────────
+        // ── XP CARD ─────────────────────────────
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(28.dp),
@@ -138,31 +165,13 @@ fun ProfileScreen() {
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "Level 23 → 24",
-                        color = Color.White
-                    )
-
-                    Text(
-                        text = "${profile?.totalXp ?: 0} XP",
-                        color = Purple,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
                 XpProgressBar(
-                    totalXp = profile?.totalXp ?: 0,
+                    totalXp = state.totalXp,
                     modifier = Modifier.fillMaxWidth()
                 )
 
                 Text(
-                    text = "Progress to next level",
+                    text = "${state.xpNeeded} XP needed for next level",
                     color = WelcomeGray,
                     modifier = Modifier.padding(top = 12.dp)
                 )
@@ -171,7 +180,7 @@ fun ProfileScreen() {
 
         Spacer(modifier = Modifier.height(18.dp))
 
-        // ── Stats ───────────────────────────────────────────────
+        // ── STATS ─────────────────────────────
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             ProfileStatCard("🎮", "${state.gamesPlayed}", "Played", Purple, Modifier.weight(1f))
             ProfileStatCard("🏆", "${state.winRate}%", "Win rate", Green, Modifier.weight(1f))

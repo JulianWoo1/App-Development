@@ -9,4 +9,5 @@ interface ProfileRepository {
     suspend fun updateUsername(newUsername: String): Result<Profile>
     suspend fun updateHighScore(newStreak: Int): Result<Profile>
     suspend fun addXp(amount: Int): Result<Unit>
+    suspend fun getUserRankFromLeaderboard(): Result<Int>
 }
