@@ -35,7 +35,6 @@ class SpeedRunViewModel(
 
     private var timerJob: Job? = null
     private var revealJob: Job? = null
-    private var roundStartTime: Long = 0L
 
     init { loadNextRound() }
 
@@ -43,7 +42,7 @@ class SpeedRunViewModel(
         if (_uiState.value.isGameOver) return
         revealJob?.cancel()
         _uiState.value = _uiState.value.copy(isLoading = true, imagesHidden = false)
-        roundStartTime = System.currentTimeMillis()
+
 
         viewModelScope.launch {
             contentRepository.getNextPair().onSuccess { (first, second) ->
@@ -110,11 +109,13 @@ class SpeedRunViewModel(
             delay(600)
             if (correct) {
                 _streak.value++
-                val xp = GameRewards.CORRECT_ANSWER_XP  // speed run uses base XP only
-                sessionXp += xp                          // ← accumulate session total
+                val xp = GameRewards.CORRECT_ANSWER_XP
+                sessionXp += xp
                 profileRepository.addXp(xp)
+                loadNextRound()
+            } else {
+                _uiState.value = _uiState.value.copy(isGameOver = true)
             }
-            loadNextRound()
         }
     }
 
