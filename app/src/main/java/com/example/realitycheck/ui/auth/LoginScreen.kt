@@ -132,17 +132,6 @@ fun LoginScreen(onNavigateToRegister: () -> Unit) {
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.clickable { onNavigateToRegister() }
         )
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        HorizontalDivider(color = MaterialTheme.colorScheme.surface, thickness = 1.dp)
-
-        TextButton(
-            onClick = { navigateToMain(context) },
-            modifier = Modifier.padding(top = 16.dp)
-        ) {
-            Text("Skip (Dev Mode)", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
-        }
     }
 }
 

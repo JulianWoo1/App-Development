@@ -11,9 +11,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
@@ -22,6 +26,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.realitycheck.ui.components.ShareScoreCard
+import androidx.core.content.FileProvider
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
+import android.app.Activity
+import android.content.Context
+import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.view.View
+import android.view.ViewGroup
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 // ===== COLORS =====
 private val Bg         = Color(0xFF050505)
@@ -52,6 +71,9 @@ fun GameOverScreen(
     onPlayAgain: () -> Unit,
     onHome: () -> Unit
 ) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -289,6 +311,65 @@ fun GameOverScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
+            // ===== SHARE BUTTON =====
+            OutlinedButton(
+                onClick = {
+                    scope.launch {
+                        val bitmap = captureComposableToBitmap(context) {
+                            ShareScoreCard(streak, xpGained, level)
+                        }
+
+                        withContext(Dispatchers.IO) {
+                            File(context.cacheDir, "share_score.png")
+                                .outputStream()
+                                .use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+                        }
+
+                        val uri = FileProvider.getUriForFile(
+                            context,
+                            "${context.packageName}.fileprovider",
+                            File(context.cacheDir, "share_score.png")
+                        )
+                        context.startActivity(
+                            Intent.createChooser(
+                                Intent(Intent.ACTION_SEND).apply {
+                                    type = "image/png"
+                                    putExtra(Intent.EXTRA_STREAM, uri)
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                },
+                                "Share your score"
+                            )
+                        )
+                    }
+                },
+                shape = RoundedCornerShape(24.dp),
+                border = BorderStroke(1.dp, Stroke),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(58.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "Share score",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Icon(
+                        imageVector = Icons.Default.Share,
+                        contentDescription = "Share",
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
             // ===== HOME BUTTON =====
             OutlinedButton(
                 onClick = onHome,
@@ -337,4 +418,41 @@ private fun StatItem(icon: String, value: String, label: String) {
         Spacer(modifier = Modifier.height(3.dp))
         Text(label, color = Gray, fontSize = 14.sp)
     }
+}
+
+private suspend fun captureComposableToBitmap(
+    context: Context,
+    widthDp: Int = 360,
+    content: @Composable () -> Unit
+): Bitmap = withContext(Dispatchers.Main) {
+    val density = context.resources.displayMetrics.density
+    val widthPx = (widthDp * density).toInt()
+
+    val composeView = ComposeView(context).apply {
+        setContent(content)
+        alpha = 0f
+    }
+
+    val rootView = (context as? Activity)
+        ?.findViewById<ViewGroup>(android.R.id.content)
+        ?: error("Cannot find root view")
+
+    rootView.addView(composeView)
+
+    val bitmap = suspendCoroutine<Bitmap> { cont ->
+        composeView.post {
+            composeView.measure(
+                View.MeasureSpec.makeMeasureSpec(widthPx, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.UNSPECIFIED
+            )
+            val heightPx = composeView.measuredHeight.coerceAtLeast(1)
+            composeView.layout(0, 0, widthPx, heightPx)
+
+            val bmp = Bitmap.createBitmap(widthPx, heightPx, Bitmap.Config.ARGB_8888)
+            Canvas(bmp).apply { composeView.draw(this) }
+            rootView.removeView(composeView)
+            cont.resume(bmp)
+        }
+    }
+    bitmap
 }
