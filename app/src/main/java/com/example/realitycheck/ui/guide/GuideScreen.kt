@@ -1,4 +1,4 @@
-package com.example.realitycheck.ui.onboarding
+package com.example.realitycheck.ui.guide
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,21 +18,37 @@ private val SubtitleGray = Color(0xFFA0A0A0)
 private val ProgressInactive = Color(0xFF1F1F1F)
 private val CardStroke = Color(0xFF1F1F1F)
 
-private data class OnboardingStep(
+private data class GuideStep(
     val number: Int,
     val cardTitle: String,
     val cardDescription: String
 )
 
 private val steps = listOf(
-    OnboardingStep(1, "Kijk goed", "Je krijgt twee contentstukken te zien. Bijvoorbeeld foto's, teksten of audio."),
-    OnboardingStep(2, "Kies je antwoord", "Wat denk jij dat echt is? Kies A, B of één van de andere opties."),
-    OnboardingStep(3, "Ontvang direct feedback", "Je ziet meteen of je het goed hebt en waarom."),
-    OnboardingStep(4, "Verdien punten & verbeter", "Speel meer, bouw je streak op en klim op de ranglijsten.")
+    GuideStep(
+        1,
+        "Choose a game mode",
+        "Pick how you want to play: Classic, Speedrun, Image Mode or Mixed Mode, each with different rules."
+    ),
+    GuideStep(
+        2,
+        "Look carefully",
+        "You will see two images shown one below the other. Study both carefully and compare the details."
+    ),
+    GuideStep(
+        3,
+        "Tap the real image",
+        "Tap the image you think is real. You’ll instantly see if you were right or wrong, and earn XP based on your answer."
+    ),
+    GuideStep(
+        4,
+        "Earn XP & improve",
+        "Keep playing to build streaks, gain XP, and climb the leaderboards."
+    )
 )
 
 @Composable
-fun OnboardingScreen(
+fun GuideScreen(
     onComplete: () -> Unit
 ) {
     var currentStep by remember { mutableIntStateOf(0) }
@@ -66,27 +82,6 @@ fun OnboardingScreen(
                         )
                     }
                 }
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                // Skip button
-                Card(
-                    modifier = Modifier.clickable { onComplete() },
-                    colors = CardDefaults.cardColors(containerColor = CardBg),
-                    shape = RoundedCornerShape(24.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .padding(horizontal = 22.dp, vertical = 12.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "Overslaan",
-                            color = Color.White,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                }
             }
 
             // Progress bars
@@ -109,7 +104,7 @@ fun OnboardingScreen(
 
             // Title
             Text(
-                text = "Hoe het werkt \uD83D\uDE80",
+                text = "How it works 🚀",
                 color = Color.White,
                 style = MaterialTheme.typography.headlineLarge,
                 modifier = Modifier.padding(top = 40.dp)
@@ -117,7 +112,7 @@ fun OnboardingScreen(
 
             // Subtitle
             Text(
-                text = "Test je intuïtie. Kun jij echt van AI onderscheiden?",
+                text = "Test your intuition. Can you really distinguish it from AI?",
                 color = SubtitleGray,
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.padding(top = 16.dp)
@@ -179,7 +174,7 @@ fun OnboardingScreen(
                 shape = RoundedCornerShape(20.dp)
             ) {
                 Text(
-                    text = if (currentStep < 3) "Volgende" else "Laten we gaan!",
+                    text = if (currentStep < 3) "Next" else "Back to settings",
                     style = MaterialTheme.typography.titleLarge,
                     color = Color.White
                 )

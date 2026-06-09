@@ -9,7 +9,7 @@
 
     <fragment
         android:id="@+id/onboardingStep1Fragment"
-        android:name="com.example.realitycheck.ui.onboarding.OnboardingFragment"
+        android:name="com.example.realitycheck.ui.guide.OnboardingFragment"
         android:label="Step 1"
         tools:layout="@layout/fragment_onboarding">
 
@@ -20,7 +20,7 @@
 
     <fragment
         android:id="@+id/onboardingStep2Fragment"
-        android:name="com.example.realitycheck.ui.onboarding.OnboardingStep2Fragment"
+        android:name="com.example.realitycheck.ui.guide.OnboardingStep2Fragment"
         android:label="Step 2"
         tools:layout="@layout/fragment_onboarding_step2">
 
@@ -31,7 +31,7 @@
 
     <fragment
         android:id="@+id/onboardingStep3Fragment"
-        android:name="com.example.realitycheck.ui.onboarding.OnboardingStep3Fragment"
+        android:name="com.example.realitycheck.ui.guide.OnboardingStep3Fragment"
         android:label="Step 3"
         tools:layout="@layout/fragment_onboarding_step3">
 
@@ -42,7 +42,7 @@
 
     <fragment
         android:id="@+id/onboardingStep4Fragment"
-        android:name="com.example.realitycheck.ui.onboarding.OnboardingStep4Fragment"
+        android:name="com.example.realitycheck.ui.guide.OnboardingStep4Fragment"
         android:label="Step 4"
         tools:layout="@layout/fragment_onboarding_step4">
 

@@ -8,7 +8,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -29,12 +29,14 @@ fun SettingsScreen(
     email: String,
     onBackClick: () -> Unit = {},
     onUsernameClick: () -> Unit = {},
-    onEmailClick: () -> Unit = {},
     onGuideClick: () -> Unit = {},
     onPrivacyClick: () -> Unit = {},
     onAboutClick: () -> Unit = {},
     onLogoutClick: () -> Unit = {}
 ) {
+
+    var showLogoutDialog by remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -92,7 +94,8 @@ fun SettingsScreen(
             title = "Email Address",
             subtitle = email,
             iconColor = ButtonPurple,
-            onClick = onEmailClick
+            onClick = {},
+            showChevron = false
         )
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -141,7 +144,9 @@ fun SettingsScreen(
             subtitle = "Sign out of your account",
             iconColor = Color(0xFFFF5B5B),
             titleColor = Color(0xFFFF5B5B),
-            onClick = onLogoutClick
+            onClick = {
+                showLogoutDialog = true
+            }
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -149,6 +154,39 @@ fun SettingsScreen(
         AppInfoCard()
 
         Spacer(modifier = Modifier.height(32.dp))
+    }
+
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showLogoutDialog = false
+            },
+            title = {
+                Text("Log Out")
+            },
+            text = {
+                Text("Are you sure you want to log out?")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showLogoutDialog = false
+                        onLogoutClick()
+                    }
+                ) {
+                    Text("Log Out", color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showLogoutDialog = false
+                    }
+                ) {
+                    Text("Cancel", color = Color.White)
+                }
+            }
+        )
     }
 }
 
@@ -171,7 +209,8 @@ private fun SettingsItemCard(
     trailingText: String? = null,
     titleColor: Color = Color.White,
     iconColor: Color = ButtonPurple,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    showChevron: Boolean = true
 ) {
     Button(
         onClick = onClick,
@@ -235,11 +274,13 @@ private fun SettingsItemCard(
                 Spacer(modifier = Modifier.width(8.dp))
             }
 
-            Icon(
-                imageVector = Icons.Outlined.ChevronRight,
-                contentDescription = null,
-                tint = TextMuted
-            )
+            if (showChevron) {
+                Icon(
+                    imageVector = Icons.Outlined.ChevronRight,
+                    contentDescription = null,
+                    tint = TextMuted
+                )
+            }
         }
     }
 }
