@@ -32,4 +32,8 @@ class FakeAuthRepository : AuthRepository {
     }
 
     override fun getCurrentUserId(): String? = storedUserId
+
+    override suspend fun getCurrentUserEmail(): String {
+        return "fake@email.com"
+    }
 }
