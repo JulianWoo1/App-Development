@@ -15,7 +15,7 @@ data class HomeUiState(
     val profile: Profile? = null,
     val isLoading: Boolean = true,
     val error: String? = null,
-    val displayName: String = "Speler",
+    val displayName: String = "Player",
     val level: Int = 1,
     val xpInCurrentLevel: Int = 0,
     val xpForNextLevel: Int = 100,
@@ -54,7 +54,7 @@ class HomeViewModel(
                     _uiState.value = _uiState.value.copy(
                         profile          = profile,
                         isLoading        = false,
-                        displayName      = profile.username ?: "Speler",
+                        displayName      = profile.username ?: "Player",
                         level            = level,
                         xpInCurrentLevel = xp - current,
                         xpForNextLevel   = next - current,

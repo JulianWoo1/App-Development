@@ -111,7 +111,7 @@ fun XpProgressBar(
                 fontSize = 10.sp
             )
             Text(
-                text = "$totalXp XP totaal",
+                text = "$totalXp total XP",
                 color = Color(0xFF6A6A9A),
                 fontSize = 10.sp
             )

@@ -55,10 +55,10 @@ object LevelSystem {
 
     /** Human-readable title for a level tier. */
     fun levelTitle(level: Int): String = when {
-        level >= 50 -> "Legende"
+        level >= 50 -> "Legend"
         level >= 30 -> "Expert"
-        level >= 20 -> "Gevorderd"
-        level >= 10 -> "Leerling"
+        level >= 20 -> "Advanced"
+        level >= 10 -> "Apprentice"
         else        -> "Beginner"
     }
 }

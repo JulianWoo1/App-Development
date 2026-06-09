@@ -53,7 +53,7 @@ private val bottomNavItemsList = listOf(
     BottomNavItem("home",    "Home",    Icons.Default.Home),
     BottomNavItem("scores",  "Scores",  Icons.Default.Star),
     BottomNavItem("badges",  "Badges",  Icons.Default.Favorite),
-    BottomNavItem("profile", "Profiel", Icons.Default.Person)
+    BottomNavItem("profile", "Profile", Icons.Default.Person)
 )
 
 @Composable
