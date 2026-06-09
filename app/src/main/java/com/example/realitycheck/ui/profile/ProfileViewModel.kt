@@ -3,6 +3,7 @@ package com.example.realitycheck.ui.profile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.realitycheck.data.model.Profile
+import com.example.realitycheck.data.repository.AuthRepository
 import com.example.realitycheck.data.repository.ProfileRepository
 import com.example.realitycheck.ui.game.LevelSystem
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,6 +15,8 @@ data class ProfileUiState(
     val profile: Profile? = null,
     val isLoading: Boolean = true,
     val error: String? = null,
+
+    val email: String = "",
 
     val gamesPlayed: Int = 0,
     val winRate: Int = 0,
@@ -31,7 +34,8 @@ data class ProfileUiState(
 )
 
 class ProfileViewModel(
-    private val profileRepository: ProfileRepository
+    private val profileRepository: ProfileRepository,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileUiState())
@@ -48,6 +52,8 @@ class ProfileViewModel(
             profileRepository.getCurrentUserProfile().fold(
                 onSuccess = { profile ->
 
+                    val email = authRepository.getCurrentUserEmail()
+
                     val xp = profile.totalXp
                     val level = LevelSystem.levelFromXp(xp)
 
@@ -57,6 +63,7 @@ class ProfileViewModel(
 
                     _uiState.value = _uiState.value.copy(
                         profile = profile,
+                        email = email,
                         isLoading = false,
 
                         totalXp = xp,
@@ -116,6 +123,21 @@ class ProfileViewModel(
                     _uiState.value = _uiState.value.copy(
                         error = it.message,
                         isEditingUsername = false
+                    )
+                }
+            )
+        }
+    }
+
+    fun logout(onDone: () -> Unit) {
+        viewModelScope.launch {
+            authRepository.signOut().fold(
+                onSuccess = {
+                    onDone()
+                },
+                onFailure = {
+                    _uiState.value = _uiState.value.copy(
+                        error = it.message
                     )
                 }
             )

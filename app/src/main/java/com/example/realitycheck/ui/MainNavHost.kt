@@ -28,6 +28,8 @@ import com.example.realitycheck.ui.home.HomeViewModel
 import com.example.realitycheck.ui.onboarding.OnboardingScreen
 import com.example.realitycheck.ui.profile.ProfileScreen
 import com.example.realitycheck.ui.scores.ScoresScreen
+import com.example.realitycheck.ui.settings.SettingsRoute
+import com.example.realitycheck.ui.settings.SettingsScreen
 
 /**
  * Holds the results of the most recently completed game session.
@@ -216,7 +218,25 @@ fun MainNavHost() {
 
             composable("scores")  { ScoresScreen() }
             composable("badges")  { BadgesScreen() }
-            composable("profile") { ProfileScreen() }
+
+            composable("profile") {
+                ProfileScreen(
+                    onOpenSettings = {
+                        navController.navigate("settings")
+                    }
+                )
+            }
+
+            composable("settings") {
+                SettingsRoute(
+                    onBackClick = { navController.popBackStack() },
+                    onLogoutClick = {
+                        navController.navigate("onboarding") {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                )
+            }
         }
     }
 }
