@@ -1,5 +1,7 @@
 package com.example.realitycheck.ui.badges
 
+import android.graphics.Bitmap
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -12,7 +14,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -20,8 +26,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.example.realitycheck.data.di.SupabaseModule
+import com.example.realitycheck.di.ImageLoaderFactory
 
 private val Background = Color(0xFF050505)
 private val CardBg = Color(0xFF0D0D0D)
@@ -113,6 +120,48 @@ fun BadgesScreen() {
 
 @Composable
 private fun BadgeGridItem(badge: BadgeUiItem) {
+    var badgeBitmap by remember { mutableStateOf<ImageBitmap?>(null) }
+    val ctx = LocalContext.current
+
+    LaunchedEffect(badge.iconUrl) {
+        val request = ImageRequest.Builder(ctx)
+            .data(badge.iconUrl)
+            .size(512)
+            .crossfade(true)
+            .build()
+
+        val result = ImageLoaderFactory.create(ctx).execute(request)
+        val drawable = result.drawable ?: return@LaunchedEffect
+
+        val w = drawable.intrinsicWidth.coerceAtLeast(1)
+        val h = drawable.intrinsicHeight.coerceAtLeast(1)
+
+        val raw = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val rawCanvas = android.graphics.Canvas(raw)
+        drawable.setBounds(0, 0, w, h)
+        drawable.draw(rawCanvas)
+
+        if (badge.isUnlocked) {
+            badgeBitmap = raw.asImageBitmap()
+        } else {
+            val tinted = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            val tintCanvas = android.graphics.Canvas(tinted)
+            val tintPaint = android.graphics.Paint().apply {
+                colorFilter = android.graphics.ColorMatrixColorFilter(
+                    floatArrayOf(
+                        0.299f, 0.587f, 0.114f, 0f, 0f,
+                        0.299f, 0.587f, 0.114f, 0f, 0f,
+                        0.299f, 0.587f, 0.114f, 0f, 0f,
+                        0f,     0f,     0f,     1f, 0f
+                    )
+                )
+            }
+            tintCanvas.drawBitmap(raw, 0f, 0f, tintPaint)
+            raw.recycle()
+            badgeBitmap = tinted.asImageBitmap()
+        }
+    }
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
@@ -127,38 +176,28 @@ private fun BadgeGridItem(badge: BadgeUiItem) {
                 .background(
                     color = if (badge.isUnlocked) Purple.copy(alpha = 0.2f) else CardBg,
                     shape = CircleShape
-                ),
+                )
+                .padding(8.dp),
             contentAlignment = Alignment.Center
         ) {
-            if (badge.isUnlocked) {
-                AsyncImage(
-                    model = badge.iconUrl,
-                    contentDescription = badge.name,
-                    modifier = Modifier
-                        .size(48.dp)
-                        .padding(4.dp),
+            if (badgeBitmap != null) {
+                Image(
+                    painter = BitmapPainter(badgeBitmap!!),
+                    contentDescription = badge.name ?: "Locked badge",
+                    modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Fit
-                )
-            } else {
-                Text(
-                    text = "?",
-                    color = SubtitleGray,
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold
                 )
             }
         }
 
-        if (badge.isUnlocked && badge.name != null) {
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = badge.name,
-                color = Color.White,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium,
-                textAlign = TextAlign.Center,
-                maxLines = 2
-            )
-        }
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = if (badge.isUnlocked) (badge.name ?: "") else "???",
+            color = if (badge.isUnlocked) Color.White else SubtitleGray,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
+            textAlign = TextAlign.Center,
+            maxLines = 2
+        )
     }
 }
