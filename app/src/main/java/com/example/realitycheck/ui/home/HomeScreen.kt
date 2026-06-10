@@ -68,7 +68,7 @@ fun HomeScreen(
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
-                        text = "Best streak: ${state.highScoreStreak}",
+                        text = "Highest streak: ${state.highScoreStreak}",
                         color = TextMuted,
                         fontSize = 12.sp
                     )
