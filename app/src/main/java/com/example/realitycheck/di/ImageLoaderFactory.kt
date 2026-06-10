@@ -1,10 +1,12 @@
 package com.example.realitycheck.di
 
 import android.content.Context
+import coil.Coil
 import coil.ImageLoader
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
 import coil.request.CachePolicy
+import coil.decode.SvgDecoder
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
@@ -37,9 +39,14 @@ object ImageLoaderFactory {
                     .maxSizeBytes(100 * 1024 * 1024)
                     .build()
             }
+            .components {
+                add(SvgDecoder.Factory())
+            }
             .crossfade(true)
             .respectCacheHeaders(false)
             .build()
+
+        Coil.setImageLoader(imageLoader!!)
 
         return imageLoader!!
     }
