@@ -90,6 +90,7 @@ dependencies {
 
     // Coil
     implementation(libs.coil.compose)
+    implementation(libs.coil.svg)
 
     // Lifecycle
     implementation(libs.androidx.lifecycle.viewmodel.compose)

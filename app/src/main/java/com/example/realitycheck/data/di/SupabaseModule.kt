@@ -51,6 +51,10 @@ object SupabaseModule {
         }
     }
 
+    val badgeRepository: BadgeRepository by lazy {
+        SupabaseBadgeRepository(client, authRepository)
+    }
+
     val contentRepository: ContentRepository by lazy {
         SupabaseContentRepository(
             fetchBatch = {
