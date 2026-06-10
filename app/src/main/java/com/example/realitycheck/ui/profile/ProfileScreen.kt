@@ -30,12 +30,17 @@ private val Green = Color(0xFF6DDC6D)
 private val Orange = Color(0xFFFF8A3D)
 
 @Composable
-fun ProfileScreen() {
+fun ProfileScreen(
+    onOpenSettings: () -> Unit
+) {
 
     val viewModel: ProfileViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return ProfileViewModel(SupabaseModule.profileRepository) as T
+                return ProfileViewModel(
+                    SupabaseModule.profileRepository,
+                    SupabaseModule.authRepository
+                ) as T
             }
         }
     )
@@ -122,37 +127,15 @@ fun ProfileScreen() {
                 }
             }
 
-            IconButton(onClick = { viewModel.openUsernameDialog() }) {
+            IconButton(
+                onClick = onOpenSettings
+            ) {
                 Icon(
                     imageVector = Icons.Outlined.Settings,
                     contentDescription = null,
                     tint = WelcomeGray
                 )
             }
-        }
-
-        if (state.isEditingUsername) {
-            AlertDialog(
-                onDismissRequest = { viewModel.closeUsernameDialog() },
-                title = { Text("Change username") },
-                text = {
-                    OutlinedTextField(
-                        value = state.usernameInput,
-                        onValueChange = { viewModel.onUsernameChange(it) },
-                        singleLine = true
-                    )
-                },
-                confirmButton = {
-                    TextButton(onClick = { viewModel.saveUsername() }) {
-                        Text("Save")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { viewModel.closeUsernameDialog() }) {
-                        Text("Cancel")
-                    }
-                }
-            )
         }
 
         Spacer(modifier = Modifier.height(26.dp))

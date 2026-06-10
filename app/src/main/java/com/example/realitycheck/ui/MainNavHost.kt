@@ -1,5 +1,7 @@
 package com.example.realitycheck.ui
 
+import android.app.Activity
+import android.content.Intent
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
@@ -10,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -19,15 +22,17 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.realitycheck.AuthActivity
 import com.example.realitycheck.data.di.SupabaseModule
 import com.example.realitycheck.ui.badges.BadgesScreen
 import com.example.realitycheck.ui.game.*
 import com.example.realitycheck.ui.gameover.GameOverScreen
+import com.example.realitycheck.ui.guide.GuideScreen
 import com.example.realitycheck.ui.home.HomeScreen
 import com.example.realitycheck.ui.home.HomeViewModel
-import com.example.realitycheck.ui.onboarding.OnboardingScreen
 import com.example.realitycheck.ui.profile.ProfileScreen
 import com.example.realitycheck.ui.scores.ScoresScreen
+import com.example.realitycheck.ui.settings.SettingsRoute
 
 /**
  * Holds the results of the most recently completed game session.
@@ -48,7 +53,7 @@ private val bottomNavItemsList = listOf(
     BottomNavItem("home",    "Home",    Icons.Default.Home),
     BottomNavItem("scores",  "Scores",  Icons.Default.Star),
     BottomNavItem("badges",  "Badges",  Icons.Default.Favorite),
-    BottomNavItem("profile", "Profiel", Icons.Default.Person)
+    BottomNavItem("profile", "Profile", Icons.Default.Person)
 )
 
 @Composable
@@ -92,14 +97,6 @@ fun MainNavHost() {
             startDestination = "home",
             modifier         = Modifier.padding(paddingValues)
         ) {
-
-            composable("onboarding") {
-                OnboardingScreen(
-                    onComplete = {
-                        navController.navigate("home") { popUpTo("onboarding") { inclusive = true } }
-                    }
-                )
-            }
 
             composable("home") {
                 HomeScreen(
@@ -216,7 +213,51 @@ fun MainNavHost() {
 
             composable("scores")  { ScoresScreen() }
             composable("badges")  { BadgesScreen() }
-            composable("profile") { ProfileScreen() }
+
+            composable("profile") {
+                ProfileScreen(
+                    onOpenSettings = {
+                        navController.navigate("settings")
+                    }
+                )
+            }
+
+            composable("settings") {
+
+                val context = LocalContext.current
+
+                SettingsRoute(
+                    onBackClick = {
+                        navController.popBackStack()
+                    },
+                    onGuideClick = {
+                        navController.navigate("guide")
+                    },
+                    onLogoutClick = {
+
+                        val intent = Intent(
+                            context,
+                            AuthActivity::class.java
+                        )
+
+                        intent.flags =
+                            Intent.FLAG_ACTIVITY_NEW_TASK or
+                                    Intent.FLAG_ACTIVITY_CLEAR_TASK
+
+                        context.startActivity(intent)
+
+                        (context as? Activity)?.finish()
+                    }
+                )
+            }
+
+            composable("guide") {
+                GuideScreen(
+                    onComplete = {
+                        navController.popBackStack()
+                    }
+                )
+            }
         }
     }
 }

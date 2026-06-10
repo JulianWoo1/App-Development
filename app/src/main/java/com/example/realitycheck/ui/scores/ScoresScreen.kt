@@ -58,7 +58,7 @@ fun ScoresScreen() {
         Spacer(modifier = Modifier.height(4.dp))
 
         Text(
-            text = "Top spelers gerangschikt op XP",
+            text = "Top players ranked by XP",
             color = SubtitleGray,
             style = MaterialTheme.typography.bodyMedium
         )
@@ -81,14 +81,14 @@ fun ScoresScreen() {
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = state.error ?: "Er is een fout opgetreden",
+                            text = state.error ?: "An error occurred",
                             color = Color.Red,
                             style = MaterialTheme.typography.bodyLarge,
                             textAlign = TextAlign.Center
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         TextButton(onClick = { viewModel.loadLeaderboard() }) {
-                            Text("Opnieuw proberen", color = Purple)
+                            Text("Try again", color = Purple)
                         }
                     }
                 }

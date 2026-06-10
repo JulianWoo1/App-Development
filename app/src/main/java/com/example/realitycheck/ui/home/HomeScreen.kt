@@ -63,12 +63,12 @@ fun HomeScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = state.profile?.username ?: "Speler",
+                        text = state.profile?.username ?: "Player",
                         color = Color.White,
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
-                        text = "Beste streak: ${state.highScoreStreak}",
+                        text = "Best streak: ${state.highScoreStreak}",
                         color = TextMuted,
                         fontSize = 12.sp
                     )
@@ -92,7 +92,7 @@ fun HomeScreen(
 
         // ── Rules mode toggle ─────────────────────────────────────────────────
         Text(
-            text = "MODUS",
+            text = "MODE",
             color = WelcomeGray,
             fontSize = 12.sp,
             modifier = Modifier.align(Alignment.Start).padding(bottom = 8.dp)
@@ -129,7 +129,7 @@ fun HomeScreen(
 
         // ── Game mode cards ───────────────────────────────────────────────────
         Text(
-            text = "SPELMODI",
+            text = "GAME MODES",
             color = WelcomeGray,
             fontSize = 12.sp,
             modifier = Modifier.align(Alignment.Start).padding(bottom = 12.dp)
@@ -138,7 +138,7 @@ fun HomeScreen(
         GameModeCard(
             icon      = "\uD83D\uDDBC️",
             title     = "Image Mode",
-            subtitle  = "Pick which is ai",
+            subtitle  = "Identify which image is real",
             badge     = "Popular",
             badgeColor = Color(0xFF1DB954),
             onClick   = { onStartGame(GameMode.IMAGE, selectedRules) }

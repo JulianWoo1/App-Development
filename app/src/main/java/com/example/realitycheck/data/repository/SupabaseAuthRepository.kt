@@ -80,4 +80,8 @@ class SupabaseAuthRepository(private val supabaseClient: SupabaseClient) : AuthR
     override fun getCurrentUserId(): String? {
         return supabaseClient.auth.currentSessionOrNull()?.user?.id
     }
+
+    override suspend fun getCurrentUserEmail(): String {
+        return supabaseClient.auth.currentUserOrNull()?.email ?: ""
+    }
 }
