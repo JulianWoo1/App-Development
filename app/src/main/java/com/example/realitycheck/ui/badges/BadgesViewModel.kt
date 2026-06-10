@@ -13,6 +13,7 @@ data class BadgeUiItem(
     val iconUrl: String,
     val name: String?,
     val description: String?,
+    val criteriaDescription: String?,
     val isUnlocked: Boolean,
     val earnedAt: String? = null
 )
@@ -49,6 +50,7 @@ class BadgesViewModel(
                                     iconUrl = badge.iconUrl,
                                     name = if (badge.id in earnedIds) badge.name else null,
                                     description = if (badge.id in earnedIds) badge.description else null,
+                                    criteriaDescription = badge.criteriaDescription,
                                     isUnlocked = badge.id in earnedIds,
                                     earnedAt = userBadges.find { it.badgeId == badge.id }?.earnedAt
                                 )
@@ -65,6 +67,7 @@ class BadgesViewModel(
                                     iconUrl = badge.iconUrl,
                                     name = null,
                                     description = null,
+                                    criteriaDescription = badge.criteriaDescription,
                                     isUnlocked = false
                                 )
                             }
