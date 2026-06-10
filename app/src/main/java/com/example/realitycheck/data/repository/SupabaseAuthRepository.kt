@@ -5,10 +5,13 @@ import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.gotrue.providers.builtin.Email
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import com.example.realitycheck.utils.AuthErrorMapper
+
 
 class SupabaseAuthRepository(private val supabaseClient: SupabaseClient) : AuthRepository {
     override suspend fun signUp(email: String, password: String, username: String): Result<String> {
         return try {
+
             supabaseClient.auth.signUpWith(Email) {
                 this.email = email
                 this.password = password
@@ -27,7 +30,7 @@ class SupabaseAuthRepository(private val supabaseClient: SupabaseClient) : AuthR
 
             Result.success(userId ?: throw Exception("User ID is null"))
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(AuthErrorMapper.map(e))
         }
     }
 
@@ -37,11 +40,14 @@ class SupabaseAuthRepository(private val supabaseClient: SupabaseClient) : AuthR
                 this.email = email
                 this.password = password
             }
-            val userId = supabaseClient.auth.currentSessionOrNull()?.user?.id 
+            val userId = supabaseClient.auth.currentSessionOrNull()?.user?.id
                 ?: throw Exception("User ID is null after sign in")
             Result.success(userId)
         } catch (e: Exception) {
-            Result.failure(e)
+            android.util.Log.e("AuthDebug", "Raw message: ${e.message}")
+            android.util.Log.e("AuthDebug", "Cause: ${e.cause?.message}")
+            android.util.Log.e("AuthDebug", "Full: ${e.javaClass.name}")
+            Result.failure(AuthErrorMapper.map(e))
         }
     }
 
@@ -62,7 +68,7 @@ class SupabaseAuthRepository(private val supabaseClient: SupabaseClient) : AuthR
             )
             Result.success(Unit)
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(AuthErrorMapper.map(e))
         }
     }
 
@@ -73,7 +79,7 @@ class SupabaseAuthRepository(private val supabaseClient: SupabaseClient) : AuthR
             }
             Result.success(Unit)
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(AuthErrorMapper.map(e))
         }
     }
 

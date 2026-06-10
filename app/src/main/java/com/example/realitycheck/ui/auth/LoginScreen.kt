@@ -34,16 +34,21 @@ fun LoginScreen(onNavigateToRegister: () -> Unit) {
             }
         }
     )
-    
+
     val authState by viewModel.authState.collectAsState()
     val passwordResetState by viewModel.passwordResetState.collectAsState()
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
 
+    LaunchedEffect(Unit) {
+        viewModel.authError.collect { message ->
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+        }
+    }
+
     LaunchedEffect(authState) {
-        when (val state = authState) {
+        when (authState) {
             is AuthState.Success -> navigateToMain(context)
-            is AuthState.Error -> Toast.makeText(context, state.message, Toast.LENGTH_SHORT).show()
             else -> {}
         }
     }
