@@ -2,8 +2,10 @@ package com.example.realitycheck.ui.game
 
 import com.example.realitycheck.data.model.Profile
 import com.example.realitycheck.data.repository.FakeAuthRepository
-import com.example.realitycheck.data.repository.FakeProfileRepository
+import com.example.realitycheck.data.repository.FakeBadgeRepository
 import com.example.realitycheck.data.repository.FakeContentRepository
+import com.example.realitycheck.data.repository.FakeProfileRepository
+import com.example.realitycheck.ui.badges.BadgeService
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -26,6 +28,7 @@ class SpeedRunViewModelTest {
     private lateinit var authRepo: FakeAuthRepository
     private lateinit var profileRepo: FakeProfileRepository
     private lateinit var contentRepo: FakeContentRepository
+    private lateinit var badgeRepo: FakeBadgeRepository
 
     @Before
     fun setup() {
@@ -33,6 +36,7 @@ class SpeedRunViewModelTest {
         authRepo = FakeAuthRepository()
         profileRepo = FakeProfileRepository(authRepo)
         contentRepo = FakeContentRepository()
+        badgeRepo = FakeBadgeRepository()
     }
 
     @After
@@ -45,7 +49,8 @@ class SpeedRunViewModelTest {
         profileRepo.profiles["test-user"] = Profile(id = "test-user")
         val vm = SpeedRunViewModel(
             profileRepository = profileRepo,
-            contentRepository = contentRepo
+            contentRepository = contentRepo,
+            badgeService = BadgeService(badgeRepo)
         )
         vm.onGameOverDismissed()
         return vm
@@ -103,5 +108,27 @@ class SpeedRunViewModelTest {
         advanceUntilIdle()
 
         assertTrue(viewModel.uiState.value.isGameOver)
+    }
+
+    @Test
+    fun `wrong answer triggers badge evaluation`() = runTest(testDispatcher) {
+        val viewModel = createViewModel()
+
+        viewModel.onSelect(!viewModel.uiState.value.isCorrectTop)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.isGameOver)
+        assertTrue(badgeRepo.getUserBadgesCallCount > 0)
+    }
+
+    @Test
+    fun `correct answer does not trigger badge evaluation`() = runTest(testDispatcher) {
+        val viewModel = createViewModel()
+
+        viewModel.onSelect(viewModel.uiState.value.isCorrectTop)
+        advanceUntilIdle()
+
+        assertEquals(1, viewModel.currentStreak.value)
+        assertEquals(0, badgeRepo.getUserBadgesCallCount)
     }
 }

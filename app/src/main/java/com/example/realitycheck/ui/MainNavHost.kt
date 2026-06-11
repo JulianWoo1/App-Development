@@ -133,6 +133,7 @@ fun MainNavHost() {
                                 SpeedRunViewModel(
                                     profileRepository = SupabaseModule.profileRepository,
                                     contentRepository = SupabaseModule.contentRepository,
+                                    badgeService      = SupabaseModule.badgeService,
                                     onXpUpdated       = { homeViewModel.loadProfile() }
                                 ) as T
                         }
@@ -166,6 +167,7 @@ fun MainNavHost() {
                                 GameViewModel(
                                     profileRepository = SupabaseModule.profileRepository,
                                     contentRepository = SupabaseModule.contentRepository,
+                                    badgeService      = SupabaseModule.badgeService,
                                     onXpUpdated       = { homeViewModel.loadProfile() }
                                 ) as T
                         }

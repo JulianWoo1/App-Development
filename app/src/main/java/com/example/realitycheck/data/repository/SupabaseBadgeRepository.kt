@@ -38,4 +38,25 @@ class SupabaseBadgeRepository(
             Result.failure(e)
         }
     }
+
+    override suspend fun earnBadge(badgeId: String): Result<Unit> {
+        val userId = authRepository.getCurrentUserId()
+            ?: return Result.failure(Exception("No user logged in"))
+
+        return try {
+            val userBadge = UserBadge(
+                userId = userId,
+                badgeId = badgeId,
+                earnedAt = java.time.Instant.now().toString()
+            )
+            userBadgesTable.insert(userBadge)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            if (e.message?.contains("duplicate key", ignoreCase = true) == true) {
+                Result.success(Unit)
+            } else {
+                Result.failure(e)
+            }
+        }
+    }
 }
