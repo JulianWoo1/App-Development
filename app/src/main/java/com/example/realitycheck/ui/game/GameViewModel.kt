@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.realitycheck.data.repository.ContentRepository
 import com.example.realitycheck.data.repository.ProfileRepository
+import com.example.realitycheck.ui.badges.BadgeEvaluationContext
+import com.example.realitycheck.ui.badges.BadgeService
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -47,6 +49,7 @@ data class GameUiState(
 class GameViewModel(
     private val profileRepository: ProfileRepository,
     private val contentRepository: ContentRepository,
+    private val badgeService: BadgeService,
     private val onXpUpdated: () -> Unit = {}
 ) : ViewModel() {
 
@@ -223,6 +226,12 @@ class GameViewModel(
             } else {
                 profileRepository.updateHighScore(_streak.value)
                 _uiState.value = _uiState.value.copy(isGameOver = true)
+                badgeService.checkAndAwardBadges(
+                    BadgeEvaluationContext(
+                        streak = _streak.value,
+                        gameMode = _uiState.value.mode
+                    )
+                )
             }
         }
     }

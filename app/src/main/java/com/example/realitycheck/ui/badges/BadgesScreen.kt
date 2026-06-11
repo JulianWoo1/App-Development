@@ -94,7 +94,10 @@ fun BadgesScreen() {
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
                         Text(
                             text = state.error ?: "An error occurred",
                             color = Color.Red,
@@ -267,11 +270,16 @@ private fun BadgeDetailDialog(badge: BadgeUiItem, onDismiss: () -> Unit) {
             Text(
                 text = if (badge.isUnlocked) (badge.name ?: "") else "???",
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = Color.White,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center
             )
         },
         text = {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
                 if (badgeBitmap != null) {
                     Box(
                         modifier = Modifier
@@ -296,7 +304,8 @@ private fun BadgeDetailDialog(badge: BadgeUiItem, onDismiss: () -> Unit) {
                     Text(
                         text = badge.description,
                         color = Color.White,
-                        fontSize = 14.sp
+                        fontSize = 14.sp,
+                        textAlign = TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                 }
@@ -305,13 +314,15 @@ private fun BadgeDetailDialog(badge: BadgeUiItem, onDismiss: () -> Unit) {
                         text = "How to unlock:",
                         color = Purple,
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = badge.criteriaDescription,
                         color = SubtitleGray,
-                        fontSize = 14.sp
+                        fontSize = 14.sp,
+                        textAlign = TextAlign.Center
                     )
                 }
             }

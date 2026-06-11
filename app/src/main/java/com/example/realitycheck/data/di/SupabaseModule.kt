@@ -3,6 +3,7 @@ package com.example.realitycheck.data.di
 import com.example.realitycheck.BuildConfig
 import com.example.realitycheck.data.model.ContentItem
 import com.example.realitycheck.data.repository.*
+import com.example.realitycheck.ui.badges.BadgeService
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.gotrue.Auth
 import io.github.jan.supabase.postgrest.Postgrest
@@ -53,6 +54,10 @@ object SupabaseModule {
 
     val badgeRepository: BadgeRepository by lazy {
         SupabaseBadgeRepository(client, authRepository)
+    }
+
+    val badgeService: BadgeService by lazy {
+        BadgeService(badgeRepository)
     }
 
     val contentRepository: ContentRepository by lazy {

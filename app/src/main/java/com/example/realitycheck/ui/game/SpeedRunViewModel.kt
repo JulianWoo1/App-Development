@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.realitycheck.data.repository.ContentRepository
 import com.example.realitycheck.data.repository.ProfileRepository
+import com.example.realitycheck.ui.badges.BadgeEvaluationContext
+import com.example.realitycheck.ui.badges.BadgeService
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,6 +17,7 @@ import kotlinx.coroutines.launch
 class SpeedRunViewModel(
     private val profileRepository: ProfileRepository,
     private val contentRepository: ContentRepository,
+    private val badgeService: BadgeService,
     private val onXpUpdated: () -> Unit = {}
 ) : ViewModel() {
 
@@ -115,6 +118,12 @@ class SpeedRunViewModel(
                 loadNextRound()
             } else {
                 _uiState.value = _uiState.value.copy(isGameOver = true)
+                badgeService.checkAndAwardBadges(
+                    BadgeEvaluationContext(
+                        streak = _streak.value,
+                        gameMode = GameMode.SPEED
+                    )
+                )
             }
         }
     }
