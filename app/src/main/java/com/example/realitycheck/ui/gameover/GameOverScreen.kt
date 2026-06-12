@@ -13,7 +13,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
@@ -26,6 +26,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.realitycheck.ui.GameResultHolder
+import com.example.realitycheck.ui.badges.BadgeDetailDialog
 import com.example.realitycheck.ui.components.ShareScoreCard
 import androidx.core.content.FileProvider
 import kotlinx.coroutines.Dispatchers
@@ -73,6 +75,21 @@ fun GameOverScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+
+    var badgeIndex by remember { mutableIntStateOf(0) }
+    val badges = GameResultHolder.newlyAwardedBadges
+
+    if (badges.isNotEmpty() && badgeIndex < badges.size) {
+        BadgeDetailDialog(
+            badge = badges[badgeIndex],
+            onDismiss = {
+                badgeIndex++
+                if (badgeIndex >= badges.size) {
+                    GameResultHolder.newlyAwardedBadges = emptyList()
+                }
+            }
+        )
+    }
 
     Box(
         modifier = Modifier

@@ -2,8 +2,11 @@ package com.example.realitycheck.ui.profile
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.realitycheck.data.model.GameSession
 import com.example.realitycheck.data.model.Profile
 import com.example.realitycheck.data.repository.AuthRepository
+import com.example.realitycheck.data.repository.BadgeRepository
+import com.example.realitycheck.data.repository.GameSessionRepository
 import com.example.realitycheck.data.repository.ProfileRepository
 import com.example.realitycheck.ui.game.LevelSystem
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,7 +22,7 @@ data class ProfileUiState(
     val email: String = "",
 
     val gamesPlayed: Int = 0,
-    val winRate: Int = 0,
+    val avgStreak: Int = 0,
     val badges: Int = 0,
 
     val totalXp: Int = 0,
@@ -29,13 +32,18 @@ data class ProfileUiState(
 
     val rank: Int = 0,
 
+    val recentSessions: List<GameSession> = emptyList(),
+    val weeklySessions: List<GameSession> = emptyList(),
+
     val isEditingUsername: Boolean = false,
     val usernameInput: String = ""
 )
 
 class ProfileViewModel(
     private val profileRepository: ProfileRepository,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val badgeRepository: BadgeRepository,
+    private val gameSessionRepository: GameSessionRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileUiState())
@@ -61,6 +69,15 @@ class ProfileViewModel(
                         .getUserRankFromLeaderboard()
                         .getOrDefault(0)
 
+                    val userBadges = badgeRepository.getCurrentUserBadges().getOrDefault(emptyList())
+                    val recentSessions = gameSessionRepository.getRecentSessions(10).getOrDefault(emptyList())
+                    val weeklySessions = gameSessionRepository.getSessionsThisWeek().getOrDefault(emptyList())
+                    val gamesPlayed = gameSessionRepository.getGamesPlayedCount().getOrDefault(0)
+
+                    val avgStreak = if (recentSessions.isNotEmpty()) {
+                        recentSessions.sumOf { it.streak } / recentSessions.size
+                    } else 0
+
                     _uiState.value = _uiState.value.copy(
                         profile = profile,
                         email = email,
@@ -73,9 +90,12 @@ class ProfileViewModel(
 
                         rank = rank,
 
-                        gamesPlayed = 0,
-                        winRate = 0,
-                        badges = 0
+                        gamesPlayed = gamesPlayed,
+                        avgStreak = avgStreak,
+                        badges = userBadges.size,
+
+                        recentSessions = recentSessions,
+                        weeklySessions = weeklySessions
                     )
                 },
                 onFailure = { e ->

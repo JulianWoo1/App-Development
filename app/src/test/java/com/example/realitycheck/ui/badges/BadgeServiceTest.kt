@@ -29,7 +29,7 @@ class BadgeServiceTest {
         val result = service.checkAndAwardBadges(ctx)
 
         assertTrue(result.isSuccess)
-        assertEquals(emptyList<String>(), result.getOrNull())
+        assertEquals(emptyList<Any>(), result.getOrNull())
         assertTrue(badgeRepo.earnedBadgeCalls.isEmpty())
     }
 
@@ -39,7 +39,7 @@ class BadgeServiceTest {
 
         val result = service.checkAndAwardBadges(ctx)
 
-        assertEquals(listOf("streaker"), result.getOrNull())
+        assertEquals(listOf("streaker"), result.getOrNull()?.map { it.id })
         assertEquals(listOf("streaker"), badgeRepo.earnedBadgeCalls)
     }
 
@@ -52,7 +52,7 @@ class BadgeServiceTest {
 
         val result = service.checkAndAwardBadges(ctx)
 
-        assertEquals(listOf("nightowl"), result.getOrNull())
+        assertEquals(listOf("nightowl"), result.getOrNull()?.map { it.id })
         assertEquals(listOf("nightowl"), badgeRepo.earnedBadgeCalls)
     }
 
@@ -75,7 +75,7 @@ class BadgeServiceTest {
 
         val result = service.checkAndAwardBadges(ctx)
 
-        assertEquals(listOf("speeddemon"), result.getOrNull())
+        assertEquals(listOf("speeddemon"), result.getOrNull()?.map { it.id })
         assertEquals(listOf("speeddemon"), badgeRepo.earnedBadgeCalls)
     }
 
@@ -88,7 +88,7 @@ class BadgeServiceTest {
 
         val result = service.checkAndAwardBadges(ctx)
 
-        assertEquals(setOf("streaker", "nightowl", "speeddemon"), result.getOrNull()?.toSet())
+        assertEquals(setOf("streaker", "nightowl", "speeddemon"), result.getOrNull()?.map { it.id }?.toSet())
         assertEquals(setOf("streaker", "nightowl", "speeddemon"), badgeRepo.earnedBadgeCalls.toSet())
     }
 
@@ -123,7 +123,7 @@ class BadgeServiceTest {
 
         val result = service.checkAndAwardBadges(ctx)
 
-        assertEquals(setOf("nightowl", "speeddemon"), result.getOrNull()?.toSet())
+        assertEquals(setOf("nightowl", "speeddemon"), result.getOrNull()?.map { it.id }?.toSet())
         assertEquals(setOf("nightowl", "speeddemon"), badgeRepo.earnedBadgeCalls.toSet())
     }
 
@@ -135,7 +135,7 @@ class BadgeServiceTest {
         val result = service.checkAndAwardBadges(ctx)
 
         assertTrue(result.isSuccess)
-        assertEquals(emptyList<String>(), result.getOrNull())
+        assertEquals(emptyList<Any>(), result.getOrNull())
         assertTrue(badgeRepo.earnedBadgeCalls.isEmpty())
     }
 }

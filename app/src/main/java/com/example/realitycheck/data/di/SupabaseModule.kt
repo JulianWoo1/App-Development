@@ -22,6 +22,9 @@ object SupabaseModule {
         install(Auth) {
             scheme = "com.example.realitycheck"
             host = "reset-password"
+            autoLoadFromStorage = true
+            autoSaveToStorage = true
+            alwaysAutoRefresh = true
         }
     }
 
@@ -58,6 +61,10 @@ object SupabaseModule {
 
     val badgeService: BadgeService by lazy {
         BadgeService(badgeRepository)
+    }
+
+    val gameSessionRepository: GameSessionRepository by lazy {
+        SupabaseGameSessionRepository(client, authRepository)
     }
 
     val contentRepository: ContentRepository by lazy {

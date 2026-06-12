@@ -24,6 +24,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.realitycheck.AuthActivity
 import com.example.realitycheck.data.di.SupabaseModule
+import com.example.realitycheck.ui.badges.BadgeUiItem
 import com.example.realitycheck.ui.badges.BadgesScreen
 import com.example.realitycheck.ui.game.*
 import com.example.realitycheck.ui.gameover.GameOverScreen
@@ -43,8 +44,8 @@ object GameResultHolder {
     var streak: Int = 0
     /** Total XP earned during this session. */
     var xpGained: Int = 0
-    /** Deprecated string alias kept for compatibility — mirrors [streak]. */
-    val score: String get() = streak.toString()
+    /** Badges awarded during this session. */
+    var newlyAwardedBadges: List<BadgeUiItem> = emptyList()
 }
 
 private data class BottomNavItem(val route: String, val label: String, val icon: ImageVector)
@@ -131,10 +132,11 @@ fun MainNavHost() {
                         factory = object : ViewModelProvider.Factory {
                             override fun <T : ViewModel> create(modelClass: Class<T>): T =
                                 SpeedRunViewModel(
-                                    profileRepository = SupabaseModule.profileRepository,
-                                    contentRepository = SupabaseModule.contentRepository,
-                                    badgeService      = SupabaseModule.badgeService,
-                                    onXpUpdated       = { homeViewModel.loadProfile() }
+                                    profileRepository   = SupabaseModule.profileRepository,
+                                    contentRepository   = SupabaseModule.contentRepository,
+                                    badgeService        = SupabaseModule.badgeService,
+                                    gameSessionRepository = SupabaseModule.gameSessionRepository,
+                                    onXpUpdated         = { homeViewModel.loadProfile() }
                                 ) as T
                         }
                     )
@@ -143,8 +145,9 @@ fun MainNavHost() {
 
                     LaunchedEffect(state.isGameOver) {
                         if (state.isGameOver) {
-                            GameResultHolder.streak   = streak
-                            GameResultHolder.xpGained = speedVm.sessionXp
+                            GameResultHolder.streak             = streak
+                            GameResultHolder.xpGained           = speedVm.sessionXp
+                            GameResultHolder.newlyAwardedBadges = speedVm.sessionNewBadges
                             navController.navigate("gameover") { popUpTo("home") { inclusive = false } }
                         }
                     }
@@ -165,10 +168,11 @@ fun MainNavHost() {
                         factory = object : ViewModelProvider.Factory {
                             override fun <T : ViewModel> create(modelClass: Class<T>): T =
                                 GameViewModel(
-                                    profileRepository = SupabaseModule.profileRepository,
-                                    contentRepository = SupabaseModule.contentRepository,
-                                    badgeService      = SupabaseModule.badgeService,
-                                    onXpUpdated       = { homeViewModel.loadProfile() }
+                                    profileRepository   = SupabaseModule.profileRepository,
+                                    contentRepository   = SupabaseModule.contentRepository,
+                                    badgeService        = SupabaseModule.badgeService,
+                                    gameSessionRepository = SupabaseModule.gameSessionRepository,
+                                    onXpUpdated         = { homeViewModel.loadProfile() }
                                 ) as T
                         }
                     )
@@ -183,8 +187,9 @@ fun MainNavHost() {
 
                     LaunchedEffect(state.isGameOver) {
                         if (state.isGameOver) {
-                            GameResultHolder.streak   = streak
-                            GameResultHolder.xpGained = gameVm.sessionXp
+                            GameResultHolder.streak             = streak
+                            GameResultHolder.xpGained           = gameVm.sessionXp
+                            GameResultHolder.newlyAwardedBadges = gameVm.sessionNewBadges
                             navController.navigate("gameover") { popUpTo("home") { inclusive = false } }
                         }
                     }

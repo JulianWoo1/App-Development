@@ -3,9 +3,11 @@ package com.example.realitycheck.ui.game
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.realitycheck.data.repository.ContentRepository
+import com.example.realitycheck.data.repository.GameSessionRepository
 import com.example.realitycheck.data.repository.ProfileRepository
 import com.example.realitycheck.ui.badges.BadgeEvaluationContext
 import com.example.realitycheck.ui.badges.BadgeService
+import com.example.realitycheck.ui.badges.BadgeUiItem
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,6 +20,7 @@ class SpeedRunViewModel(
     private val profileRepository: ProfileRepository,
     private val contentRepository: ContentRepository,
     private val badgeService: BadgeService,
+    private val gameSessionRepository: GameSessionRepository,
     private val onXpUpdated: () -> Unit = {}
 ) : ViewModel() {
 
@@ -34,6 +37,13 @@ class SpeedRunViewModel(
      * Read by [MainNavHost] just before navigating to GameOverScreen.
      */
     var sessionXp: Int = 0
+        private set
+
+    /**
+     * Badges awarded during this session.
+     * Read by [MainNavHost] just before navigating to GameOverScreen.
+     */
+    var sessionNewBadges: List<BadgeUiItem> = emptyList()
         private set
 
     private var timerJob: Job? = null
@@ -117,13 +127,19 @@ class SpeedRunViewModel(
                 profileRepository.addXp(xp)
                 loadNextRound()
             } else {
-                _uiState.value = _uiState.value.copy(isGameOver = true)
-                badgeService.checkAndAwardBadges(
+                gameSessionRepository.recordGameSession(
+                    mode = GameMode.SPEED.name,
+                    streak = _streak.value,
+                    xpEarned = sessionXp
+                )
+                val result = badgeService.checkAndAwardBadges(
                     BadgeEvaluationContext(
                         streak = _streak.value,
                         gameMode = GameMode.SPEED
                     )
                 )
+                sessionNewBadges = result.getOrDefault(emptyList())
+                _uiState.value = _uiState.value.copy(isGameOver = true)
             }
         }
     }
