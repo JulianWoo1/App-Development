@@ -4,6 +4,7 @@ import com.example.realitycheck.data.model.Profile
 import com.example.realitycheck.data.repository.FakeAuthRepository
 import com.example.realitycheck.data.repository.FakeBadgeRepository
 import com.example.realitycheck.data.repository.FakeContentRepository
+import com.example.realitycheck.data.repository.FakeGameSessionRepository
 import com.example.realitycheck.data.repository.FakeProfileRepository
 import com.example.realitycheck.ui.badges.BadgeService
 import kotlinx.coroutines.Dispatchers
@@ -29,6 +30,7 @@ class GameViewModelTest {
     private lateinit var profileRepo: FakeProfileRepository
     private lateinit var contentRepo: FakeContentRepository
     private lateinit var badgeRepo: FakeBadgeRepository
+    private lateinit var gameSessionRepo: FakeGameSessionRepository
 
     @Before
     fun setup() {
@@ -37,6 +39,7 @@ class GameViewModelTest {
         profileRepo = FakeProfileRepository(authRepo)
         contentRepo = FakeContentRepository()
         badgeRepo = FakeBadgeRepository()
+        gameSessionRepo = FakeGameSessionRepository()
     }
 
     @After
@@ -52,7 +55,8 @@ class GameViewModelTest {
         return GameViewModel(
             profileRepository = profileRepo,
             contentRepository = contentRepo,
-            badgeService = BadgeService(badgeRepo)
+            badgeService = BadgeService(badgeRepo),
+            gameSessionRepository = gameSessionRepo
         )
     }
 

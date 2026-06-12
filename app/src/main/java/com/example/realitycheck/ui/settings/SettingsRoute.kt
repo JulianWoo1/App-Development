@@ -29,7 +29,9 @@ fun SettingsRoute(
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 return ProfileViewModel(
                     SupabaseModule.profileRepository,
-                    SupabaseModule.authRepository
+                    SupabaseModule.authRepository,
+                    SupabaseModule.badgeRepository,
+                    SupabaseModule.gameSessionRepository
                 ) as T
             }
         }

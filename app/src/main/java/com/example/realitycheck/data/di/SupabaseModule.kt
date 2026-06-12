@@ -60,6 +60,10 @@ object SupabaseModule {
         BadgeService(badgeRepository)
     }
 
+    val gameSessionRepository: GameSessionRepository by lazy {
+        SupabaseGameSessionRepository(client, authRepository)
+    }
+
     val contentRepository: ContentRepository by lazy {
         SupabaseContentRepository(
             fetchBatch = {

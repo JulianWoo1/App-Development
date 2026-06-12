@@ -3,6 +3,7 @@ package com.example.realitycheck.ui.game
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.realitycheck.data.repository.ContentRepository
+import com.example.realitycheck.data.repository.GameSessionRepository
 import com.example.realitycheck.data.repository.ProfileRepository
 import com.example.realitycheck.ui.badges.BadgeEvaluationContext
 import com.example.realitycheck.ui.badges.BadgeService
@@ -50,6 +51,7 @@ class GameViewModel(
     private val profileRepository: ProfileRepository,
     private val contentRepository: ContentRepository,
     private val badgeService: BadgeService,
+    private val gameSessionRepository: GameSessionRepository,
     private val onXpUpdated: () -> Unit = {}
 ) : ViewModel() {
 
@@ -225,6 +227,11 @@ class GameViewModel(
                 loadNextRound()
             } else {
                 profileRepository.updateHighScore(_streak.value)
+                gameSessionRepository.recordGameSession(
+                    mode = _uiState.value.mode.name,
+                    streak = _streak.value,
+                    xpEarned = sessionXp
+                )
                 _uiState.value = _uiState.value.copy(isGameOver = true)
                 badgeService.checkAndAwardBadges(
                     BadgeEvaluationContext(

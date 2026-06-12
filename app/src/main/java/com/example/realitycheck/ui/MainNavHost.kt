@@ -131,10 +131,11 @@ fun MainNavHost() {
                         factory = object : ViewModelProvider.Factory {
                             override fun <T : ViewModel> create(modelClass: Class<T>): T =
                                 SpeedRunViewModel(
-                                    profileRepository = SupabaseModule.profileRepository,
-                                    contentRepository = SupabaseModule.contentRepository,
-                                    badgeService      = SupabaseModule.badgeService,
-                                    onXpUpdated       = { homeViewModel.loadProfile() }
+                                    profileRepository   = SupabaseModule.profileRepository,
+                                    contentRepository   = SupabaseModule.contentRepository,
+                                    badgeService        = SupabaseModule.badgeService,
+                                    gameSessionRepository = SupabaseModule.gameSessionRepository,
+                                    onXpUpdated         = { homeViewModel.loadProfile() }
                                 ) as T
                         }
                     )
@@ -165,10 +166,11 @@ fun MainNavHost() {
                         factory = object : ViewModelProvider.Factory {
                             override fun <T : ViewModel> create(modelClass: Class<T>): T =
                                 GameViewModel(
-                                    profileRepository = SupabaseModule.profileRepository,
-                                    contentRepository = SupabaseModule.contentRepository,
-                                    badgeService      = SupabaseModule.badgeService,
-                                    onXpUpdated       = { homeViewModel.loadProfile() }
+                                    profileRepository   = SupabaseModule.profileRepository,
+                                    contentRepository   = SupabaseModule.contentRepository,
+                                    badgeService        = SupabaseModule.badgeService,
+                                    gameSessionRepository = SupabaseModule.gameSessionRepository,
+                                    onXpUpdated         = { homeViewModel.loadProfile() }
                                 ) as T
                         }
                     )

@@ -4,6 +4,7 @@ import com.example.realitycheck.data.model.Profile
 import com.example.realitycheck.data.repository.FakeAuthRepository
 import com.example.realitycheck.data.repository.FakeBadgeRepository
 import com.example.realitycheck.data.repository.FakeContentRepository
+import com.example.realitycheck.data.repository.FakeGameSessionRepository
 import com.example.realitycheck.data.repository.FakeProfileRepository
 import com.example.realitycheck.ui.badges.BadgeService
 
@@ -29,6 +30,7 @@ class SpeedRunViewModelTest {
     private lateinit var profileRepo: FakeProfileRepository
     private lateinit var contentRepo: FakeContentRepository
     private lateinit var badgeRepo: FakeBadgeRepository
+    private lateinit var gameSessionRepo: FakeGameSessionRepository
 
     @Before
     fun setup() {
@@ -37,6 +39,7 @@ class SpeedRunViewModelTest {
         profileRepo = FakeProfileRepository(authRepo)
         contentRepo = FakeContentRepository()
         badgeRepo = FakeBadgeRepository()
+        gameSessionRepo = FakeGameSessionRepository()
     }
 
     @After
@@ -50,7 +53,8 @@ class SpeedRunViewModelTest {
         val vm = SpeedRunViewModel(
             profileRepository = profileRepo,
             contentRepository = contentRepo,
-            badgeService = BadgeService(badgeRepo)
+            badgeService = BadgeService(badgeRepo),
+            gameSessionRepository = gameSessionRepo
         )
         vm.onGameOverDismissed()
         return vm
