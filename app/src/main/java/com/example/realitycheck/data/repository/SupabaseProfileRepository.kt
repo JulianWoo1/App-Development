@@ -32,11 +32,11 @@ class SupabaseProfileRepository(
         }
     }
 
-    override suspend fun getTopProfiles(limit: Int): Result<List<Profile>> {
+    override suspend fun getTopProfiles(limit: Int, offset: Int): Result<List<Profile>> {
         return try {
             val profiles = table.select {
                 order("total_xp", Order.DESCENDING)
-                limit(limit.toLong())
+                range(offset.toLong(), (offset + limit - 1).toLong())
             }.decodeList<Profile>()
 
             Result.success(profiles)
@@ -111,4 +111,6 @@ class SupabaseProfileRepository(
             Result.failure(e)
         }
     }
+
+
 }

@@ -14,10 +14,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.realitycheck.data.di.SupabaseModule
 import com.example.realitycheck.ui.game.LevelSystem
 
 private val Background = Color(0xFF050505)
@@ -28,18 +24,9 @@ private val Gold = Color(0xFFD4AF37)
 private val Silver = Color(0xFFC0C0C0)
 private val Bronze = Color(0xFFCD7F32)
 private val Orange = Color(0xFFFF8A3D)
-private val Green = Color(0xFF6DDC6D)
 
 @Composable
-fun ScoresScreen() {
-    val viewModel: ScoresViewModel = viewModel(
-        factory = object : ViewModelProvider.Factory {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return ScoresViewModel(SupabaseModule.profileRepository) as T
-            }
-        }
-    )
-
+fun ScoresScreen(viewModel: ScoresViewModel) {
     val state by viewModel.uiState.collectAsState()
 
     Column(
@@ -63,22 +50,49 @@ fun ScoresScreen() {
             style = MaterialTheme.typography.bodyMedium
         )
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // ── Filter selector ─────────────────────────────────────────────
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(CardBg, RoundedCornerShape(12.dp))
+                .padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            listOf("All-time" to LeaderboardFilter.ALL_TIME, "Today" to LeaderboardFilter.TODAY)
+                .forEach { (label, filterValue) ->
+                    val selected = state.filter == filterValue
+                    Button(
+                        onClick = { viewModel.setFilter(filterValue) },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (selected) Purple else Color.Transparent,
+                            contentColor = if (selected) Color.White else SubtitleGray
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(0.dp)
+                    ) {
+                        Text(
+                            text = label,
+                            fontSize = 13.sp,
+                            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
+                        )
+                    }
+                }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         when {
             state.isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = Purple)
                 }
             }
+
             state.error != null -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
                             text = state.error ?: "An error occurred",
@@ -93,6 +107,19 @@ fun ScoresScreen() {
                     }
                 }
             }
+
+            state.entries.isEmpty() -> {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(
+                        text = if (state.filter == LeaderboardFilter.TODAY)
+                            "No scores yet today — be the first!"
+                        else "No scores yet",
+                        color = SubtitleGray,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+
             else -> {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -103,6 +130,32 @@ fun ScoresScreen() {
                         key = { _, entry -> entry.rank }
                     ) { _, entry ->
                         LeaderboardRow(entry = entry)
+                    }
+
+                    if (state.hasMore) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 12.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (state.isLoadingMore) {
+                                    CircularProgressIndicator(
+                                        color = Purple,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                } else {
+                                    TextButton(onClick = { viewModel.loadMore() }) {
+                                        Text(
+                                            "View more",
+                                            color = Purple,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

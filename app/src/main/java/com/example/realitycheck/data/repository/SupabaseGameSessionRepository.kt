@@ -1,15 +1,24 @@
 package com.example.realitycheck.data.repository
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.example.realitycheck.data.model.GameSession
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
+import java.text.SimpleDateFormat
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 import java.util.UUID
+import io.github.jan.supabase.postgrest.rpc
+import com.example.realitycheck.data.model.TodayLeaderboardRow
+import io.github.jan.supabase.postgrest.rpc
 
 class SupabaseGameSessionRepository(
     private val supabaseClient: SupabaseClient,
@@ -29,7 +38,7 @@ class SupabaseGameSessionRepository(
                 gameMode = mode,
                 streak = streak,
                 xpEarned = xpEarned,
-                playedAt = java.time.Instant.now().toString()
+                playedAt = nowIso()
             )
             table.insert(session)
             Result.success(Unit)
@@ -54,6 +63,7 @@ class SupabaseGameSessionRepository(
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun getSessionsThisWeek(): Result<List<GameSession>> {
         val userId = authRepository.getCurrentUserId()
             ?: return Result.failure(Exception("No user logged in"))
@@ -74,6 +84,18 @@ class SupabaseGameSessionRepository(
         }
     }
 
+    override suspend fun getTodayLeaderboard(limit: Int, offset: Int): Result<List<Pair<String, Int>>> {
+        return try {
+            val rows = supabaseClient.postgrest.rpc(
+                "get_today_leaderboard",
+                mapOf("limit_count" to limit, "offset_count" to offset)
+            ).decodeList<TodayLeaderboardRow>()
+            Result.success(rows.map { it.userId to it.xpToday })
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     override suspend fun getGamesPlayedCount(): Result<Int> {
         val userId = authRepository.getCurrentUserId()
             ?: return Result.failure(Exception("No user logged in"))
@@ -86,5 +108,12 @@ class SupabaseGameSessionRepository(
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    /** ISO-8601 UTC timestamp, e.g. 2026-06-12T14:23:01.123Z — avoids java.time.Instant (API 26+). */
+    private fun nowIso(): String {
+        val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
+        sdf.timeZone = TimeZone.getTimeZone("UTC")
+        return sdf.format(Date())
     }
 }
