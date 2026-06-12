@@ -24,6 +24,8 @@ data class ScoresUiState(
     val entries: List<LeaderboardEntry> = emptyList(),
     val filter: LeaderboardFilter = LeaderboardFilter.ALL_TIME,
     val isLoading: Boolean = true,
+    val isLoadingMore: Boolean = false,
+    val hasMore: Boolean = true,
     val error: String? = null
 )
 
@@ -35,6 +37,8 @@ class ScoresViewModel(
     private val _uiState = MutableStateFlow(ScoresUiState())
     val uiState: StateFlow<ScoresUiState> = _uiState.asStateFlow()
 
+    private val pageSize = 20
+
     init { loadLeaderboard() }
 
     fun setFilter(filter: LeaderboardFilter) {
@@ -45,51 +49,78 @@ class ScoresViewModel(
 
     fun loadLeaderboard() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+            _uiState.value = _uiState.value.copy(isLoading = true, error = null, hasMore = true)
+            fetchPage(offset = 0, append = false)
+        }
+    }
 
-            when (_uiState.value.filter) {
-                LeaderboardFilter.ALL_TIME -> {
-                    profileRepository.getTopProfiles(20).fold(
-                        onSuccess = { profiles ->
-                            val entries = profiles.mapIndexed { index, profile ->
+    fun loadMore() {
+        val state = _uiState.value
+        if (state.isLoading || state.isLoadingMore || !state.hasMore) return
+
+        viewModelScope.launch {
+            _uiState.value = state.copy(isLoadingMore = true)
+            fetchPage(offset = state.entries.size, append = true)
+        }
+    }
+
+    private suspend fun fetchPage(offset: Int, append: Boolean) {
+        when (_uiState.value.filter) {
+            LeaderboardFilter.ALL_TIME -> {
+                profileRepository.getTopProfiles(limit = pageSize, offset = offset).fold(
+                    onSuccess = { profiles ->
+                        val newEntries = profiles.mapIndexed { index, profile ->
+                            LeaderboardEntry(
+                                rank = offset + index + 1,
+                                username = profile.username ?: "Anonymous",
+                                totalXp = profile.totalXp,
+                                level = LevelSystem.levelFromXp(profile.totalXp),
+                                highScoreStreak = profile.highScoreStreak
+                            )
+                        }
+                        applyPage(newEntries, append, profiles.size)
+                    },
+                    onFailure = { e -> onPageError(e, append) }
+                )
+            }
+            LeaderboardFilter.TODAY -> {
+                gameSessionRepository.getTodayLeaderboard(limit = pageSize, offset = offset).fold(
+                    onSuccess = { todayTotals ->
+                        val newEntries = todayTotals.mapIndexedNotNull { index, (userId, xpToday) ->
+                            val profile = profileRepository.getProfile(userId).getOrNull()
+                            profile?.let {
                                 LeaderboardEntry(
-                                    rank = index + 1,
-                                    username = profile.username ?: "Anonymous",
-                                    totalXp = profile.totalXp,
-                                    level = LevelSystem.levelFromXp(profile.totalXp),
-                                    highScoreStreak = profile.highScoreStreak
+                                    rank = offset + index + 1,
+                                    username = it.username ?: "Anonymous",
+                                    totalXp = xpToday,
+                                    level = LevelSystem.levelFromXp(it.totalXp),
+                                    highScoreStreak = it.highScoreStreak
                                 )
                             }
-                            _uiState.value = _uiState.value.copy(entries = entries, isLoading = false)
-                        },
-                        onFailure = { e ->
-                            _uiState.value = _uiState.value.copy(isLoading = false, error = e.message)
                         }
-                    )
-                }
-                LeaderboardFilter.TODAY -> {
-                    gameSessionRepository.getTodayLeaderboard(20).fold(
-                        onSuccess = { todayTotals ->
-                            val entries = todayTotals.mapIndexedNotNull { index, (userId, xpToday) ->
-                                val profile = profileRepository.getProfile(userId).getOrNull()
-                                profile?.let {
-                                    LeaderboardEntry(
-                                        rank = index + 1,
-                                        username = it.username ?: "Anonymous",
-                                        totalXp = xpToday,
-                                        level = LevelSystem.levelFromXp(it.totalXp),
-                                        highScoreStreak = it.highScoreStreak
-                                    )
-                                }
-                            }
-                            _uiState.value = _uiState.value.copy(entries = entries, isLoading = false)
-                        },
-                        onFailure = { e ->
-                            _uiState.value = _uiState.value.copy(isLoading = false, error = e.message)
-                        }
-                    )
-                }
+                        applyPage(newEntries, append, todayTotals.size)
+                    },
+                    onFailure = { e -> onPageError(e, append) }
+                )
             }
         }
+    }
+
+    private fun applyPage(newEntries: List<LeaderboardEntry>, append: Boolean, fetchedCount: Int) {
+        val combined = if (append) _uiState.value.entries + newEntries else newEntries
+        _uiState.value = _uiState.value.copy(
+            entries = combined,
+            isLoading = false,
+            isLoadingMore = false,
+            hasMore = fetchedCount >= pageSize
+        )
+    }
+
+    private fun onPageError(e: Throwable, append: Boolean) {
+        _uiState.value = _uiState.value.copy(
+            isLoading = false,
+            isLoadingMore = false,
+            error = if (append) null else e.message
+        )
     }
 }

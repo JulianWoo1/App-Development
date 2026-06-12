@@ -69,7 +69,7 @@ fun ScoresScreen(viewModel: ScoresViewModel) {
                         shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = if (selected) Purple else Color.Transparent,
-                            contentColor   = if (selected) Color.White else SubtitleGray
+                            contentColor = if (selected) Color.White else SubtitleGray
                         ),
                         elevation = ButtonDefaults.buttonElevation(0.dp)
                     ) {
@@ -90,6 +90,7 @@ fun ScoresScreen(viewModel: ScoresViewModel) {
                     CircularProgressIndicator(color = Purple)
                 }
             }
+
             state.error != null -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -106,6 +107,7 @@ fun ScoresScreen(viewModel: ScoresViewModel) {
                     }
                 }
             }
+
             state.entries.isEmpty() -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
@@ -117,6 +119,7 @@ fun ScoresScreen(viewModel: ScoresViewModel) {
                     )
                 }
             }
+
             else -> {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -127,6 +130,32 @@ fun ScoresScreen(viewModel: ScoresViewModel) {
                         key = { _, entry -> entry.rank }
                     ) { _, entry ->
                         LeaderboardRow(entry = entry)
+                    }
+
+                    if (state.hasMore) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 12.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (state.isLoadingMore) {
+                                    CircularProgressIndicator(
+                                        color = Purple,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                } else {
+                                    TextButton(onClick = { viewModel.loadMore() }) {
+                                        Text(
+                                            "View more",
+                                            color = Purple,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

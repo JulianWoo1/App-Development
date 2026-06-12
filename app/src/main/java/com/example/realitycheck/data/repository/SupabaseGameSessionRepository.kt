@@ -84,11 +84,11 @@ class SupabaseGameSessionRepository(
         }
     }
 
-    override suspend fun getTodayLeaderboard(limit: Int): Result<List<Pair<String, Int>>> {
+    override suspend fun getTodayLeaderboard(limit: Int, offset: Int): Result<List<Pair<String, Int>>> {
         return try {
             val rows = supabaseClient.postgrest.rpc(
                 "get_today_leaderboard",
-                mapOf("limit_count" to limit)
+                mapOf("limit_count" to limit, "offset_count" to offset)
             ).decodeList<TodayLeaderboardRow>()
             Result.success(rows.map { it.userId to it.xpToday })
         } catch (e: Exception) {
