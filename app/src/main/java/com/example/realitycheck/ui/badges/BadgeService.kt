@@ -6,7 +6,7 @@ class BadgeService(
     private val badgeRepository: BadgeRepository,
     private val badgeConditions: List<BadgeCondition> = BadgeConditions.defaults
 ) {
-    suspend fun checkAndAwardBadges(context: BadgeEvaluationContext): Result<List<String>> {
+    suspend fun checkAndAwardBadges(context: BadgeEvaluationContext): Result<List<BadgeUiItem>> {
         val earnedResult = badgeRepository.getCurrentUserBadges()
         if (earnedResult.isFailure) return Result.success(emptyList())
 
@@ -23,6 +23,25 @@ class BadgeService(
             badgeRepository.earnBadge(badgeId)
         }
 
-        return Result.success(toAward)
+        if (toAward.isEmpty()) return Result.success(emptyList())
+
+        val allBadgesResult = badgeRepository.getAllBadges()
+        if (allBadgesResult.isFailure) return Result.success(emptyList())
+
+        val allBadges = allBadgesResult.getOrDefault(emptyList())
+        val items = allBadges
+            .filter { it.id in toAward }
+            .map { badge ->
+                BadgeUiItem(
+                    id = badge.id,
+                    iconUrl = badge.iconUrl,
+                    name = badge.name,
+                    description = badge.description,
+                    criteriaDescription = badge.criteriaDescription,
+                    isUnlocked = true
+                )
+            }
+
+        return Result.success(items)
     }
 }

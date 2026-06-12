@@ -7,6 +7,7 @@ import com.example.realitycheck.data.repository.GameSessionRepository
 import com.example.realitycheck.data.repository.ProfileRepository
 import com.example.realitycheck.ui.badges.BadgeEvaluationContext
 import com.example.realitycheck.ui.badges.BadgeService
+import com.example.realitycheck.ui.badges.BadgeUiItem
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -66,6 +67,13 @@ class GameViewModel(
      * Read by [MainNavHost] just before navigating to GameOverScreen.
      */
     var sessionXp: Int = 0
+        private set
+
+    /**
+     * Badges awarded during this session.
+     * Read by [MainNavHost] just before navigating to GameOverScreen.
+     */
+    var sessionNewBadges: List<BadgeUiItem> = emptyList()
         private set
 
     private val aiTexts = listOf(
@@ -232,13 +240,14 @@ class GameViewModel(
                     streak = _streak.value,
                     xpEarned = sessionXp
                 )
-                _uiState.value = _uiState.value.copy(isGameOver = true)
-                badgeService.checkAndAwardBadges(
+                val result = badgeService.checkAndAwardBadges(
                     BadgeEvaluationContext(
                         streak = _streak.value,
                         gameMode = _uiState.value.mode
                     )
                 )
+                sessionNewBadges = result.getOrDefault(emptyList())
+                _uiState.value = _uiState.value.copy(isGameOver = true)
             }
         }
     }
