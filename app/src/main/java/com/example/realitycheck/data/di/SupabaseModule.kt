@@ -22,6 +22,9 @@ object SupabaseModule {
         install(Auth) {
             scheme = "com.example.realitycheck"
             host = "reset-password"
+            autoLoadFromStorage = true
+            autoSaveToStorage = true
+            alwaysAutoRefresh = true
         }
     }
 
