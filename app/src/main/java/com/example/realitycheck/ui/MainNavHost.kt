@@ -225,7 +225,8 @@ fun MainNavHost() {
                         override fun <T : ViewModel> create(modelClass: Class<T>): T {
                             return ScoresViewModel(
                                 SupabaseModule.profileRepository,
-                                SupabaseModule.gameSessionRepository
+                                SupabaseModule.gameSessionRepository,
+                                SupabaseModule.authRepository
                             ) as T
                         }
                     }

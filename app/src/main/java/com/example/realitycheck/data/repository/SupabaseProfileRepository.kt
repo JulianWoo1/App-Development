@@ -111,6 +111,4 @@ class SupabaseProfileRepository(
             Result.failure(e)
         }
     }
-
-
 }

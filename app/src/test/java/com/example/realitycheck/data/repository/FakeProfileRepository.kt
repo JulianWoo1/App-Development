@@ -19,11 +19,16 @@ class FakeProfileRepository(private val authRepository: FakeAuthRepository = Fak
         return Result.success(profile)
     }
 
-    override suspend fun getTopProfiles(limit: Int): Result<List<Profile>> {
+    override suspend fun getTopProfiles(limit: Int, offset: Int): Result<List<Profile>> {
         if (shouldFail) return Result.failure(Exception("Network error"))
-        return Result.success(profiles.values.sortedByDescending { it.totalXp }.take(limit))
-    }
 
+        val sorted = profiles.values
+            .sortedByDescending { it.totalXp }
+            .drop(offset)
+            .take(limit)
+
+        return Result.success(sorted)
+    }
     override suspend fun updateUsername(newUsername: String): Result<Profile> {
         val userId = authRepository.getCurrentUserId() ?: return Result.failure(Exception("No user logged in"))
         val profile = profiles[userId] ?: Profile(id = userId)
