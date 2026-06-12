@@ -33,6 +33,7 @@ import com.example.realitycheck.ui.home.HomeScreen
 import com.example.realitycheck.ui.home.HomeViewModel
 import com.example.realitycheck.ui.profile.ProfileScreen
 import com.example.realitycheck.ui.scores.ScoresScreen
+import com.example.realitycheck.ui.scores.ScoresViewModel
 import com.example.realitycheck.ui.settings.SettingsRoute
 
 /**
@@ -218,7 +219,27 @@ fun MainNavHost() {
                 )
             }
 
-            composable("scores")  { ScoresScreen() }
+            composable("scores") {
+                val scoresViewModel: ScoresViewModel = viewModel(
+                    factory = object : ViewModelProvider.Factory {
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                            return ScoresViewModel(
+                                SupabaseModule.profileRepository,
+                                SupabaseModule.gameSessionRepository
+                            ) as T
+                        }
+                    }
+                )
+
+                LaunchedEffect(currentRoute) {
+                    if (currentRoute == "scores") {
+                        scoresViewModel.loadLeaderboard()
+                    }
+                }
+
+                ScoresScreen(viewModel = scoresViewModel)
+            }
+
             composable("badges")  { BadgesScreen() }
 
             composable("profile") {
