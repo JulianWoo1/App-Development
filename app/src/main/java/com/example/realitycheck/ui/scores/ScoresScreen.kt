@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.realitycheck.ui.game.LevelSystem
@@ -172,10 +173,16 @@ private fun LeaderboardRow(entry: LeaderboardEntry) {
         else -> SubtitleGray
     }
 
+    val containerColor = if (entry.isMe) {
+        Purple.copy(alpha = 0.15f)
+    } else {
+        CardBg
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = CardBg)
+        colors = CardDefaults.cardColors(containerColor = containerColor)
     ) {
         Row(
             modifier = Modifier
@@ -183,23 +190,31 @@ private fun LeaderboardRow(entry: LeaderboardEntry) {
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+
+            // Rank
             Text(
                 text = "#${entry.rank}",
                 color = rankColor,
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp,
-                modifier = Modifier.width(36.dp)
+                modifier = Modifier.width(40.dp)
             )
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            Column(modifier = Modifier.weight(1f)) {
+            // Username
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
                 Text(
-                    text = entry.username,
+                    text = if (entry.isMe) "${entry.username} (You)" else entry.username,
                     color = Color.White,
                     fontWeight = FontWeight.SemiBold,
-                    fontSize = 15.sp
+                    fontSize = 15.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
+
                 Text(
                     text = LevelSystem.levelTitle(entry.level),
                     color = SubtitleGray,
@@ -207,33 +222,49 @@ private fun LeaderboardRow(entry: LeaderboardEntry) {
                 )
             }
 
-            Spacer(modifier = Modifier.width(8.dp))
+            // Level
+            Box(
+                modifier = Modifier.width(40.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                LevelBadge(level = entry.level)
+            }
 
-            LevelBadge(level = entry.level)
-
-            Spacer(modifier = Modifier.width(20.dp))
-
-            Text(
-                text = "${formatXp(entry.totalXp)} XP",
-                color = Purple,
-                fontWeight = FontWeight.Bold,
-                fontSize = 14.sp
-            )
-
-            Spacer(modifier = Modifier.width(20.dp))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            // XP
+            Box(
+                modifier = Modifier.width(80.dp),
+                contentAlignment = Alignment.CenterEnd
+            ) {
                 Text(
-                    text = "\uD83D\uDD25",
-                    fontSize = 14.sp
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = "${entry.highScoreStreak}",
-                    color = Orange,
+                    text = "${formatXp(entry.totalXp)} XP",
+                    color = Purple,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp
                 )
+            }
+
+            // Streak
+            Box(
+                modifier = Modifier.width(50.dp),
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "\uD83D\uDD25",
+                        fontSize = 14.sp
+                    )
+
+                    Spacer(modifier = Modifier.width(4.dp))
+
+                    Text(
+                        text = "${entry.highScoreStreak}",
+                        color = Orange,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp
+                    )
+                }
             }
         }
     }

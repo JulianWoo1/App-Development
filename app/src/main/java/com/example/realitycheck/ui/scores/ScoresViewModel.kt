@@ -2,6 +2,7 @@ package com.example.realitycheck.ui.scores
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.realitycheck.data.repository.AuthRepository
 import com.example.realitycheck.data.repository.GameSessionRepository
 import com.example.realitycheck.data.repository.ProfileRepository
 import com.example.realitycheck.ui.game.LevelSystem
@@ -17,7 +18,8 @@ data class LeaderboardEntry(
     val username: String,
     val totalXp: Int,
     val level: Int,
-    val highScoreStreak: Int
+    val highScoreStreak: Int,
+    val isMe: Boolean = false
 )
 
 data class ScoresUiState(
@@ -31,7 +33,8 @@ data class ScoresUiState(
 
 class ScoresViewModel(
     private val profileRepository: ProfileRepository,
-    private val gameSessionRepository: GameSessionRepository
+    private val gameSessionRepository: GameSessionRepository,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ScoresUiState())
@@ -65,6 +68,8 @@ class ScoresViewModel(
     }
 
     private suspend fun fetchPage(offset: Int, append: Boolean) {
+        val currentUserId = authRepository.getCurrentUserId()
+
         when (_uiState.value.filter) {
             LeaderboardFilter.ALL_TIME -> {
                 profileRepository.getTopProfiles(limit = pageSize, offset = offset).fold(
@@ -75,7 +80,8 @@ class ScoresViewModel(
                                 username = profile.username ?: "Anonymous",
                                 totalXp = profile.totalXp,
                                 level = LevelSystem.levelFromXp(profile.totalXp),
-                                highScoreStreak = profile.highScoreStreak
+                                highScoreStreak = profile.highScoreStreak,
+                                isMe = profile.id == currentUserId
                             )
                         }
                         applyPage(newEntries, append, profiles.size)
@@ -94,7 +100,8 @@ class ScoresViewModel(
                                     username = it.username ?: "Anonymous",
                                     totalXp = xpToday,
                                     level = LevelSystem.levelFromXp(it.totalXp),
-                                    highScoreStreak = it.highScoreStreak
+                                    highScoreStreak = it.highScoreStreak,
+                                    isMe = userId == currentUserId
                                 )
                             }
                         }

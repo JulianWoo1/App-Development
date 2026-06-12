@@ -36,4 +36,23 @@ class FakeGameSessionRepository : GameSessionRepository {
         if (shouldFail) return Result.failure(Exception("Fake failure"))
         return Result.success(sessions.size)
     }
+
+    override suspend fun getTodayLeaderboard(
+        limit: Int,
+        offset: Int
+    ): Result<List<Pair<String, Int>>> {
+        if (shouldFail) return Result.failure(Exception("Fake failure"))
+
+        val data = sessions
+            .groupBy { it.userId }
+            .mapValues { entry ->
+                entry.value.sumOf { it.xpEarned }
+            }
+            .toList()
+            .sortedByDescending { it.second }
+            .drop(offset)
+            .take(limit)
+
+        return Result.success(data)
+    }
 }
