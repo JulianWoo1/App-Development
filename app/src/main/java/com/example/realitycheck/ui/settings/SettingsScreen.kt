@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.realitycheck.audio.LocalSoundManager
 
 private val BgDeep = Color(0xFF050505)
 private val CardBg = Color(0xFF0D0D0D)
@@ -34,8 +35,11 @@ fun SettingsScreen(
     onAboutClick: () -> Unit = {},
     onLogoutClick: () -> Unit = {}
 ) {
-
     var showLogoutDialog by remember { mutableStateOf(false) }
+    val sound = LocalSoundManager.current
+
+    // Track local toggle state backed directly by the sound manager preference
+    var sfxEnabled by remember { mutableStateOf(sound.isSoundEnabled) }
 
     Column(
         modifier = Modifier
@@ -46,7 +50,10 @@ fun SettingsScreen(
     ) {
 
         IconButton(
-            onClick = onBackClick,
+            onClick =  {
+                sound.playClick()
+                onBackClick()
+            },
             modifier = Modifier.size(52.dp)
         ) {
             Icon(
@@ -100,6 +107,76 @@ fun SettingsScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
+        // ── NEW PREFERENCES SECTION ──────────────────────────────────────────
+        SectionHeader("PREFERENCES")
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(88.dp),
+            shape = RoundedCornerShape(22.dp),
+            colors = CardDefaults.cardColors(containerColor = CardBg)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 18.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(52.dp)
+                        .background(
+                            ButtonPurple.copy(alpha = 0.12f),
+                            RoundedCornerShape(16.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = if (sfxEnabled) Icons.Outlined.VolumeUp else Icons.Outlined.VolumeOff,
+                        contentDescription = null,
+                        tint = ButtonPurple
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Sound Effects",
+                        color = Color.White,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 18.sp
+                    )
+                    Text(
+                        text = "Play game and interaction sounds",
+                        color = TextMuted,
+                        fontSize = 14.sp
+                    )
+                }
+
+                Switch(
+                    checked = sfxEnabled,
+                    onCheckedChange = { isChecked ->
+                        sound.isSoundEnabled = isChecked
+                        sfxEnabled = isChecked
+                        // Play a brief confirmation click if enabled
+                        if (isChecked) { sound.playClick() }
+                    },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = ButtonPurple,
+                        uncheckedThumbColor = TextMuted,
+                        uncheckedTrackColor = Color(0xFF1F1F1F)
+                    )
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(32.dp))
+
         SectionHeader("OTHER")
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -145,6 +222,7 @@ fun SettingsScreen(
             iconColor = Color(0xFFFF5B5B),
             titleColor = Color(0xFFFF5B5B),
             onClick = {
+                sound.playClick()
                 showLogoutDialog = true
             }
         )
@@ -159,17 +237,15 @@ fun SettingsScreen(
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = {
+                sound.playClick()
                 showLogoutDialog = false
             },
-            title = {
-                Text("Log Out")
-            },
-            text = {
-                Text("Are you sure you want to log out?")
-            },
+            title = { Text("Log Out") },
+            text = { Text("Are you sure you want to log out?") },
             confirmButton = {
                 TextButton(
                     onClick = {
+                        sound.playClick()
                         showLogoutDialog = false
                         onLogoutClick()
                     }
@@ -180,6 +256,7 @@ fun SettingsScreen(
             dismissButton = {
                 TextButton(
                     onClick = {
+                        sound.playClick()
                         showLogoutDialog = false
                     }
                 ) {
@@ -212,8 +289,12 @@ private fun SettingsItemCard(
     onClick: () -> Unit,
     showChevron: Boolean = true
 ) {
+    val sound = LocalSoundManager.current
     Button(
-        onClick = onClick,
+        onClick = {
+            sound.playClick()
+            onClick()
+        },
         modifier = modifier
             .fillMaxWidth()
             .height(88.dp),

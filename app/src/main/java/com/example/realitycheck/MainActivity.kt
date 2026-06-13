@@ -9,28 +9,38 @@ import com.example.realitycheck.ui.MainNavHost
 import com.example.realitycheck.ui.nointernet.NoInternetScreen
 import com.example.realitycheck.ui.theme.RealityCheckTheme
 import com.example.realitycheck.viewmodel.NetworkViewModel
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.CompositionLocalProvider
+import com.example.realitycheck.audio.LocalSoundManager
+import com.example.realitycheck.audio.SoundManager
+
 
 class MainActivity : ComponentActivity()
 {
-    override fun onCreate(savedInstanceState: Bundle?)
-    {
+    override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContent {
             RealityCheckTheme {
 
-                val viewModel: NetworkViewModel = viewModel()
-                val isOnline by viewModel.isOnline.collectAsState()
-
-                if (!isOnline)
-                {
-                    NoInternetScreen(
-                        onRetrySuccess = { }
-                    )
+                val soundManager = remember {
+                    SoundManager(this)
                 }
-                else
-                {
-                    MainNavHost()
+
+                CompositionLocalProvider(
+                    LocalSoundManager provides soundManager
+                ) {
+
+                    val viewModel: NetworkViewModel = viewModel()
+                    val isOnline by viewModel.isOnline.collectAsState()
+
+                    if (!isOnline) {
+                        NoInternetScreen(
+                            onRetrySuccess = { }
+                        )
+                    } else {
+                        MainNavHost()
+                    }
                 }
             }
         }
