@@ -23,6 +23,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.realitycheck.AuthActivity
+import com.example.realitycheck.audio.LocalSoundManager
 import com.example.realitycheck.data.di.SupabaseModule
 import com.example.realitycheck.ui.badges.BadgeUiItem
 import com.example.realitycheck.ui.badges.BadgesScreen
@@ -61,7 +62,7 @@ private val bottomNavItemsList = listOf(
 @Composable
 fun MainNavHost() {
     val navController = rememberNavController()
-
+    val sound = LocalSoundManager.current
     val homeViewModel: HomeViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
@@ -80,6 +81,7 @@ fun MainNavHost() {
                         NavigationBarItem(
                             selected = currentRoute == item.route,
                             onClick  = {
+                                sound.playClick()
                                 navController.navigate(item.route) {
                                     popUpTo("home") { saveState = true }
                                     launchSingleTop = true
@@ -214,8 +216,14 @@ fun MainNavHost() {
                     level     = homeState.level,
                     currentXp = homeState.xpInCurrentLevel,
                     maxXp     = homeState.xpForNextLevel,
-                    onPlayAgain = { navController.navigate("home") { popUpTo("gameover") { inclusive = true } } },
-                    onHome      = { navController.navigate("home") { popUpTo("gameover") { inclusive = true } } }
+                    onPlayAgain = {
+                        sound.playClick()
+                        navController.navigate("home") { popUpTo("gameover") { inclusive = true } }
+                                  },
+                    onHome      = {
+                        sound.playClick()
+                        navController.navigate("home") { popUpTo("gameover") { inclusive = true } }
+                    }
                 )
             }
 
@@ -246,6 +254,7 @@ fun MainNavHost() {
             composable("profile") {
                 ProfileScreen(
                     onOpenSettings = {
+                        sound.playClick()
                         navController.navigate("settings")
                     }
                 )
@@ -283,6 +292,7 @@ fun MainNavHost() {
             composable("guide") {
                 GuideScreen(
                     onComplete = {
+                        sound.playClick()
                         navController.popBackStack()
                     }
                 )

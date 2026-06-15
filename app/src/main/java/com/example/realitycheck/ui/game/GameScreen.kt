@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.realitycheck.di.ImageLoaderFactory
-
+import com.example.realitycheck.audio.LocalSoundManager
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ZoomOutMap
 
@@ -49,6 +49,7 @@ fun GameScreen(
 ) {
     val context = LocalContext.current
     val imageLoader = remember { ImageLoaderFactory.create(context) }
+    val soundManager = LocalSoundManager.current
 
     var fullscreenImage by remember { mutableStateOf<String?>(null) }
 
@@ -73,11 +74,16 @@ fun GameScreen(
         label = ""
     )
 
-    LaunchedEffect(uiState.earnedXp) {
-        if (uiState.earnedXp > 0) {
-            xpVisible = true
-            kotlinx.coroutines.delay(1000)
-            xpVisible = false
+    LaunchedEffect(uiState.showOverlay) {
+        if (uiState.showOverlay) {
+            if (uiState.lastResultCorrect) {
+                soundManager.playCorrect()
+                xpVisible = true
+                kotlinx.coroutines.delay(1000)
+                xpVisible = false
+            } else {
+                soundManager.playWrong()
+            }
         }
     }
 
@@ -145,8 +151,12 @@ fun GameScreen(
                         content = uiState.topContent,
                         label = "Photo A",
                         isImage = uiState.isImageMode,
-                        onClick = { onSelect(true) },
-                        onImageClick = { fullscreenImage = it },
+                        onClick = {
+                            soundManager.playClick()
+                            onSelect(true) },
+                        onImageClick = {
+                            soundManager.playClick()
+                            fullscreenImage = it },
                         enabled = !uiState.isLoading && !uiState.showOverlay,
                         showOverlay = uiState.showOverlay && uiState.tappedTop != false,
                         isCorrect = uiState.lastResultCorrect,
@@ -158,8 +168,12 @@ fun GameScreen(
                         content = uiState.bottomContent,
                         label = "Photo B",
                         isImage = uiState.isImageMode,
-                        onClick = { onSelect(false) },
-                        onImageClick = { fullscreenImage = it },
+                        onClick = {
+                            soundManager.playClick()
+                            onSelect(false) },
+                        onImageClick = {
+                            soundManager.playClick()
+                            fullscreenImage = it },
                         enabled = !uiState.isLoading && !uiState.showOverlay,
                         showOverlay = uiState.showOverlay && uiState.tappedTop != true,
                         isCorrect = uiState.lastResultCorrect,
@@ -187,6 +201,7 @@ fun GameScreen(
                             emoji = "🤖",
                             modifier = Modifier.weight(1f)
                         ) {
+                            soundManager.playClick()
                             onBothAnswer(true)
                         }
 
@@ -195,6 +210,7 @@ fun GameScreen(
                             emoji = "📷",
                             modifier = Modifier.weight(1f)
                         ) {
+                            soundManager.playClick()
                             onBothAnswer(false)
                         }
                     }
@@ -264,7 +280,10 @@ fun GameScreen(
                             scale = newScale
                         }
                     }
-                    .clickable { fullscreenImage = null }
+                    .clickable {
+                        soundManager.playClick()
+                        fullscreenImage = null
+                    }
             ) {
 
                 AsyncImage(
@@ -289,7 +308,9 @@ fun GameScreen(
                         .padding(12.dp)
                         .size(48.dp)
                         .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
-                        .clickable { fullscreenImage = null },
+                        .clickable {
+                            soundManager.playClick()
+                            fullscreenImage = null },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(

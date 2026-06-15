@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.sp
 import com.example.realitycheck.ui.components.XpProgressBar
 import com.example.realitycheck.ui.game.GameMode
 import com.example.realitycheck.ui.game.RulesMode
+import com.example.realitycheck.audio.LocalSoundManager
 
 private val BgDeep       = Color(0xFF050505)
 private val CardBg       = Color(0xFF0D0D0D)
@@ -30,6 +31,7 @@ fun HomeScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     var selectedRules by remember { mutableStateOf(RulesMode.CLASSIC) }
+    val sound = LocalSoundManager.current
 
     Column(
         modifier = Modifier
@@ -107,7 +109,10 @@ fun HomeScreen(
             RulesMode.entries.forEach { mode ->
                 val selected = mode == selectedRules
                 Button(
-                    onClick  = { selectedRules = mode },
+                    onClick  = {
+                        sound.playClick()
+                        selectedRules = mode
+                               },
                     modifier = Modifier.weight(1f),
                     shape    = RoundedCornerShape(10.dp),
                     colors   = ButtonDefaults.buttonColors(
@@ -141,7 +146,10 @@ fun HomeScreen(
             subtitle  = "Identify which image is real",
             badge     = "Popular",
             badgeColor = Color(0xFF1DB954),
-            onClick   = { onStartGame(GameMode.IMAGE, selectedRules) }
+            onClick   = {
+                sound.playClick()
+                onStartGame(GameMode.IMAGE, selectedRules)
+            }
         )
         Spacer(modifier = Modifier.height(12.dp))
         GameModeCard(
@@ -159,7 +167,10 @@ fun HomeScreen(
             subtitle  = "Quickly spot real vs AI before images vanish",
             badge     = null,
             badgeColor = null,
-            onClick   = { onStartGame(GameMode.SPEED, RulesMode.CLASSIC) } // speed always classic
+            onClick   = {
+                sound.playClick()
+                onStartGame(GameMode.SPEED, RulesMode.CLASSIC)
+            } // speed always classic
         )
 
         Spacer(modifier = Modifier.weight(1f))

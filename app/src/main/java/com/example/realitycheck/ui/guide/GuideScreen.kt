@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.example.realitycheck.audio.LocalSoundManager
 
 private val CardBg = Color(0xFF0D0D0D)
 private val ButtonPurple = Color(0xFF5B2EFF)
@@ -52,6 +53,7 @@ fun GuideScreen(
     onComplete: () -> Unit
 ) {
     var currentStep by remember { mutableIntStateOf(0) }
+    val sound = LocalSoundManager.current
 
     Box(
         modifier = Modifier
@@ -161,6 +163,7 @@ fun GuideScreen(
             // Continue button
             Button(
                 onClick = {
+                    sound.playClick()
                     if (currentStep < 3) {
                         currentStep++
                     } else {

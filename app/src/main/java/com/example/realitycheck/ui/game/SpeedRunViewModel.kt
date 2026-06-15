@@ -32,17 +32,9 @@ class SpeedRunViewModel(
     private val _streak = MutableStateFlow(0)
     val currentStreak: StateFlow<Int> = _streak.asStateFlow()
 
-    /**
-     * Total XP earned during this speed-run session.
-     * Read by [MainNavHost] just before navigating to GameOverScreen.
-     */
     var sessionXp: Int = 0
         private set
 
-    /**
-     * Badges awarded during this session.
-     * Read by [MainNavHost] just before navigating to GameOverScreen.
-     */
     var sessionNewBadges: List<BadgeUiItem> = emptyList()
         private set
 
@@ -55,7 +47,6 @@ class SpeedRunViewModel(
         if (_uiState.value.isGameOver) return
         revealJob?.cancel()
         _uiState.value = _uiState.value.copy(isLoading = true, imagesHidden = false)
-
 
         viewModelScope.launch {
             contentRepository.getNextPair().onSuccess { (first, second) ->
@@ -119,14 +110,18 @@ class SpeedRunViewModel(
             showOverlay = true, lastResultCorrect = correct, tappedTop = tappedTop
         )
         viewModelScope.launch {
-            delay(600)
             if (correct) {
                 _streak.value++
                 val xp = GameRewards.CORRECT_ANSWER_XP
                 sessionXp += xp
+
                 profileRepository.addXp(xp)
+                onXpUpdated()
+
+                delay(600)
                 loadNextRound()
             } else {
+                delay(600)
                 gameSessionRepository.recordGameSession(
                     mode = GameMode.SPEED.name,
                     streak = _streak.value,
