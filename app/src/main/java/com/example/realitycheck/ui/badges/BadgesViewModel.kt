@@ -31,10 +31,6 @@ class BadgesViewModel(
     private val _uiState = MutableStateFlow(BadgesUiState())
     val uiState: StateFlow<BadgesUiState> = _uiState.asStateFlow()
 
-    init {
-        loadBadges()
-    }
-
     fun loadBadges() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
