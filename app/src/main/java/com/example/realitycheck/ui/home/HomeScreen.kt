@@ -169,8 +169,8 @@ fun HomeScreen(
             badgeColor = null,
             onClick   = {
                 sound.playClick()
-                onStartGame(GameMode.SPEED, RulesMode.CLASSIC)
-            } // speed always classic
+                onStartGame(GameMode.SPEED, selectedRules)
+            }
         )
 
         Spacer(modifier = Modifier.weight(1f))

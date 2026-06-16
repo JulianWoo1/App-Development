@@ -49,6 +49,8 @@ fun BadgesScreen() {
     val state by viewModel.uiState.collectAsState()
     var selectedBadge by remember { mutableStateOf<BadgeUiItem?>(null) }
 
+    LaunchedEffect(Unit) { viewModel.loadBadges() }
+
     if (selectedBadge != null) {
         BadgeDetailDialog(
             badge = selectedBadge!!,

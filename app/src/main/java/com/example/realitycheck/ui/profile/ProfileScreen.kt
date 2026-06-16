@@ -56,6 +56,8 @@ fun ProfileScreen(
     val state by viewModel.uiState.collectAsState()
     val profile = state.profile
 
+    LaunchedEffect(Unit) { viewModel.loadProfile() }
+
     Column(
         modifier = Modifier
             .fillMaxSize()

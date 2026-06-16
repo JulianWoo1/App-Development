@@ -139,6 +139,7 @@ fun MainNavHost() {
                                     contentRepository   = SupabaseModule.contentRepository,
                                     badgeService        = SupabaseModule.badgeService,
                                     gameSessionRepository = SupabaseModule.gameSessionRepository,
+                                    rulesMode           = rulesMode,
                                     onXpUpdated         = { homeViewModel.loadProfile() }
                                 ) as T
                         }

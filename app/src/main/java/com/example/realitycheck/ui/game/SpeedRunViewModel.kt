@@ -21,11 +21,12 @@ class SpeedRunViewModel(
     private val contentRepository: ContentRepository,
     private val badgeService: BadgeService,
     private val gameSessionRepository: GameSessionRepository,
+    private val rulesMode: RulesMode = RulesMode.CLASSIC,
     private val onXpUpdated: () -> Unit = {}
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
-        GameUiState(mode = GameMode.SPEED, timeRemainingSeconds = REVEAL_SECONDS)
+        GameUiState(mode = GameMode.SPEED, rulesMode = rulesMode, timeRemainingSeconds = REVEAL_SECONDS)
     )
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
 
@@ -43,19 +44,39 @@ class SpeedRunViewModel(
 
     init { loadNextRound() }
 
+    private fun allowedRoundTypes(): List<RoundType> = when (rulesMode) {
+        RulesMode.CLASSIC -> listOf(RoundType.ONE_REAL)
+        RulesMode.CHAOS   -> RoundType.entries
+    }
+
     fun loadNextRound() {
         if (_uiState.value.isGameOver) return
         revealJob?.cancel()
         _uiState.value = _uiState.value.copy(isLoading = true, imagesHidden = false)
 
         viewModelScope.launch {
-            contentRepository.getNextPair().onSuccess { (first, second) ->
-                val topIsReal = (0..1).random() == 0
-                val (realItem, aiItem) = if (!first.isAi) first to second else second to first
+            when (allowedRoundTypes().random()) {
+                RoundType.ONE_REAL  -> loadOneRealRound()
+                RoundType.BOTH_AI   -> loadBothSameRound(wantAi = true)
+                RoundType.BOTH_REAL -> loadBothSameRound(wantAi = false)
+            }
+        }
+    }
 
+    private suspend fun loadOneRealRound(attempt: Int = 0) {
+        if (attempt >= MAX_RETRIES) { _uiState.value = _uiState.value.copy(isGameOver = true); return }
+
+        contentRepository.getNextPair().fold(
+            onSuccess = { (a, b) ->
+                val real = listOf(a, b).firstOrNull { !it.isAi }
+                val ai   = listOf(a, b).firstOrNull {  it.isAi }
+
+                if (real == null || ai == null) { loadOneRealRound(attempt + 1); return }
+
+                val topIsReal = (0..1).random() == 0
                 _uiState.value = _uiState.value.copy(
-                    topContent           = if (topIsReal) realItem.contentUrl else aiItem.contentUrl,
-                    bottomContent        = if (topIsReal) aiItem.contentUrl else realItem.contentUrl,
+                    topContent           = if (topIsReal) real.contentUrl else ai.contentUrl,
+                    bottomContent        = if (topIsReal) ai.contentUrl else real.contentUrl,
                     isCorrectTop         = topIsReal,
                     isImageMode          = true,
                     roundType            = RoundType.ONE_REAL,
@@ -64,8 +85,33 @@ class SpeedRunViewModel(
                     timeRemainingSeconds = REVEAL_SECONDS
                 )
                 startRevealTimer()
-            }
-        }
+            },
+            onFailure = { loadOneRealRound(attempt + 1) }
+        )
+    }
+
+    private suspend fun loadBothSameRound(wantAi: Boolean, attempt: Int = 0) {
+        val type = if (wantAi) RoundType.BOTH_AI else RoundType.BOTH_REAL
+        if (attempt >= MAX_RETRIES) { _uiState.value = _uiState.value.copy(isGameOver = true); return }
+
+        contentRepository.getNextPair().fold(
+            onSuccess = { (a, b) ->
+                val candidates = listOf(a, b).filter { it.isAi == wantAi }
+                if (candidates.size < 2) { loadBothSameRound(wantAi, attempt + 1); return }
+
+                _uiState.value = _uiState.value.copy(
+                    topContent           = candidates[0].contentUrl,
+                    bottomContent        = candidates[1].contentUrl,
+                    isImageMode          = true,
+                    roundType            = type,
+                    isLoading            = false,
+                    showOverlay          = false,
+                    timeRemainingSeconds = REVEAL_SECONDS
+                )
+                startRevealTimer()
+            },
+            onFailure = { loadBothSameRound(wantAi, attempt + 1) }
+        )
     }
 
     private fun startRevealTimer() {
@@ -90,7 +136,10 @@ class SpeedRunViewModel(
     fun onSelect(isTop: Boolean) {
         if (_uiState.value.showOverlay || _uiState.value.isGameOver) return
         revealJob?.cancel()
-        val correct = isTop == _uiState.value.isCorrectTop
+        val correct = when (_uiState.value.roundType) {
+            RoundType.ONE_REAL                     -> isTop == _uiState.value.isCorrectTop
+            RoundType.BOTH_AI, RoundType.BOTH_REAL -> false
+        }
         handleResult(correct, isTop)
     }
 
@@ -122,6 +171,7 @@ class SpeedRunViewModel(
                 loadNextRound()
             } else {
                 delay(600)
+                profileRepository.updateHighScore(_streak.value)
                 gameSessionRepository.recordGameSession(
                     mode = GameMode.SPEED.name,
                     streak = _streak.value,
@@ -143,5 +193,6 @@ class SpeedRunViewModel(
 
     companion object {
         private const val REVEAL_SECONDS = 3
+        private const val MAX_RETRIES = 10
     }
 }
