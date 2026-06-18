@@ -27,6 +27,7 @@ import com.example.realitycheck.di.ImageLoaderFactory
 import com.example.realitycheck.audio.LocalSoundManager
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ZoomOutMap
+import androidx.compose.ui.platform.LocalHapticFeedback
 
 private val Purple = Color(0xFF5B2EFF)
 private val Gold = Color(0xFFD4AF37)
@@ -50,6 +51,7 @@ fun GameScreen(
     val context = LocalContext.current
     val imageLoader = remember { ImageLoaderFactory.create(context) }
     val soundManager = LocalSoundManager.current
+    val haptic = LocalHapticFeedback.current
 
     var fullscreenImage by remember { mutableStateOf<String?>(null) }
 
@@ -83,6 +85,7 @@ fun GameScreen(
                 xpVisible = false
             } else {
                 soundManager.playWrong()
+                soundManager.vibrate(haptic)
             }
         }
     }

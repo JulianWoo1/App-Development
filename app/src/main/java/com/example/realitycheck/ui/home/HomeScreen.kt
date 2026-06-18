@@ -164,9 +164,9 @@ fun HomeScreen(
         GameModeCard(
             icon      = "\u26A1",
             title     = "Speed Run",
-            subtitle  = "Quickly spot real vs AI before images vanish",
-            badge     = null,
-            badgeColor = null,
+            subtitle  = "Choose quickly under pressure",
+            badge     = "New",
+            badgeColor = ButtonPurple,
             onClick   = {
                 sound.playClick()
                 onStartGame(GameMode.SPEED, selectedRules)

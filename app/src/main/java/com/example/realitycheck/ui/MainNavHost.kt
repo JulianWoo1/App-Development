@@ -48,6 +48,9 @@ object GameResultHolder {
     var xpGained: Int = 0
     /** Badges awarded during this session. */
     var newlyAwardedBadges: List<BadgeUiItem> = emptyList()
+
+    var lastMode: GameMode = GameMode.IMAGE
+    var lastRules: RulesMode = RulesMode.CLASSIC
 }
 
 private data class BottomNavItem(val route: String, val label: String, val icon: ImageVector)
@@ -149,9 +152,13 @@ fun MainNavHost() {
 
                     LaunchedEffect(state.isGameOver) {
                         if (state.isGameOver) {
+                            GameResultHolder.lastMode = GameMode.SPEED
+                            GameResultHolder.lastRules = rulesMode
+
                             GameResultHolder.streak             = streak
                             GameResultHolder.xpGained           = speedVm.sessionXp
                             GameResultHolder.newlyAwardedBadges = speedVm.sessionNewBadges
+
                             navController.navigate("gameover") { popUpTo("home") { inclusive = false } }
                         }
                     }
@@ -191,9 +198,13 @@ fun MainNavHost() {
 
                     LaunchedEffect(state.isGameOver) {
                         if (state.isGameOver) {
+                            GameResultHolder.lastMode = gameMode
+                            GameResultHolder.lastRules = rulesMode
+
                             GameResultHolder.streak             = streak
                             GameResultHolder.xpGained           = gameVm.sessionXp
                             GameResultHolder.newlyAwardedBadges = gameVm.sessionNewBadges
+
                             navController.navigate("gameover") { popUpTo("home") { inclusive = false } }
                         }
                     }
@@ -219,9 +230,21 @@ fun MainNavHost() {
                     maxXp     = homeState.xpForNextLevel,
                     onPlayAgain = {
                         sound.playClick()
-                        navController.navigate("home") { popUpTo("gameover") { inclusive = true } }
-                                  },
-                    onHome      = {
+
+                        val mode = when (GameResultHolder.lastMode)
+                        {
+                            GameMode.IMAGE -> "image"
+                            GameMode.TEXT  -> "text"
+                            GameMode.SPEED -> "speed"
+                        }
+
+                        val rules = GameResultHolder.lastRules.name
+
+                        navController.navigate("game/$mode/$rules") {
+                            popUpTo("gameover") { inclusive = true }
+                        }
+                    },
+                    onHome = {
                         sound.playClick()
                         navController.navigate("home") { popUpTo("gameover") { inclusive = true } }
                     }

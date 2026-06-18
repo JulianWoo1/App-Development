@@ -40,6 +40,7 @@ fun SettingsScreen(
 
     // Track local toggle state backed directly by the sound manager preference
     var sfxEnabled by remember { mutableStateOf(sound.isSoundEnabled) }
+    var hapticsEnabled by remember { mutableStateOf(sound.isHapticsEnabled) }
 
     Column(
         modifier = Modifier
@@ -107,73 +108,40 @@ fun SettingsScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // ── NEW PREFERENCES SECTION ──────────────────────────────────────────
         SectionHeader("PREFERENCES")
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(88.dp),
-            shape = RoundedCornerShape(22.dp),
-            colors = CardDefaults.cardColors(containerColor = CardBg)
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 18.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(52.dp)
-                        .background(
-                            ButtonPurple.copy(alpha = 0.12f),
-                            RoundedCornerShape(16.dp)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = if (sfxEnabled) Icons.Outlined.VolumeUp else Icons.Outlined.VolumeOff,
-                        contentDescription = null,
-                        tint = ButtonPurple
-                    )
-                }
+        SettingsToggleCard(
+            icon = if (sfxEnabled)
+                Icons.Outlined.VolumeUp
+            else
+                Icons.Outlined.VolumeOff,
+            title = "Sound Effects",
+            subtitle = "Play game and interaction sounds",
+            checked = sfxEnabled,
+            onCheckedChange = { isChecked ->
+                sound.isSoundEnabled = isChecked
+                sfxEnabled = isChecked
 
-                Spacer(modifier = Modifier.width(16.dp))
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Sound Effects",
-                        color = Color.White,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 18.sp
-                    )
-                    Text(
-                        text = "Play game and interaction sounds",
-                        color = TextMuted,
-                        fontSize = 14.sp
-                    )
-                }
-
-                Switch(
-                    checked = sfxEnabled,
-                    onCheckedChange = { isChecked ->
-                        sound.isSoundEnabled = isChecked
-                        sfxEnabled = isChecked
-                        // Play a brief confirmation click if enabled
-                        if (isChecked) { sound.playClick() }
-                    },
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = Color.White,
-                        checkedTrackColor = ButtonPurple,
-                        uncheckedThumbColor = TextMuted,
-                        uncheckedTrackColor = Color(0xFF1F1F1F)
-                    )
-                )
+                if (isChecked) sound.playClick()
             }
-        }
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        SettingsToggleCard(
+            icon = Icons.Outlined.Vibration,
+            title = "Haptics",
+            subtitle = "Play vibration on wrong answers",
+            checked = hapticsEnabled,
+            onCheckedChange = { isChecked ->
+                sound.isHapticsEnabled = isChecked
+                hapticsEnabled = isChecked
+
+                if (isChecked) sound.playClick()
+            }
+        )
 
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -362,6 +330,80 @@ private fun SettingsItemCard(
                     tint = TextMuted
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun SettingsToggleCard(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    iconColor: Color = ButtonPurple
+) {
+    val sound = LocalSoundManager.current
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(88.dp),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(containerColor = CardBg)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 18.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+
+            Box(
+                modifier = Modifier
+                    .size(52.dp)
+                    .background(
+                        iconColor.copy(alpha = 0.12f),
+                        RoundedCornerShape(16.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = iconColor
+                )
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    color = Color.White,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 18.sp
+                )
+                Text(
+                    text = subtitle,
+                    color = TextMuted,
+                    fontSize = 14.sp
+                )
+            }
+
+            Switch(
+                checked = checked,
+                onCheckedChange = {
+                    sound.playClick()
+                    onCheckedChange(it)
+                },
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = Color.White,
+                    checkedTrackColor = ButtonPurple,
+                    uncheckedThumbColor = TextMuted,
+                    uncheckedTrackColor = Color(0xFF1F1F1F)
+                )
+            )
         }
     }
 }

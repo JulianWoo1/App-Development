@@ -15,6 +15,7 @@ class SoundManager(context: Context) {
     private val levelUpId: Int
 
     var isSoundEnabled: Boolean = true
+    var isHapticsEnabled: Boolean = true
 
     init {
         val attributes = AudioAttributes.Builder()
@@ -51,6 +52,13 @@ class SoundManager(context: Context) {
     fun playLevelUp() {
         if (!isSoundEnabled) return
         soundPool.play(levelUpId, 1f, 1f, 1, 0, 1f)
+    }
+
+    fun vibrate(haptic: androidx.compose.ui.hapticfeedback.HapticFeedback?) {
+        if (!isHapticsEnabled) return
+        haptic?.performHapticFeedback(
+            androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress
+        )
     }
 
     fun release() {
