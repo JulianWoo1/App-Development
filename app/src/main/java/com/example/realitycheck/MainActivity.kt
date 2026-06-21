@@ -1,35 +1,52 @@
 package com.example.realitycheck
 
 import android.os.Bundle
-import com.google.android.material.bottomnavigation.BottomNavigationView
-import androidx.appcompat.app.AppCompatActivity
-import androidx.navigation.findNavController
-import androidx.navigation.ui.AppBarConfiguration
-import androidx.navigation.ui.setupActionBarWithNavController
-import androidx.navigation.ui.setupWithNavController
-import com.example.realitycheck.databinding.ActivityMainBinding
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.*
+import com.example.realitycheck.ui.MainNavHost
+import com.example.realitycheck.ui.nointernet.NoInternetScreen
+import com.example.realitycheck.ui.theme.RealityCheckTheme
+import com.example.realitycheck.viewmodel.NetworkViewModel
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.CompositionLocalProvider
+import com.example.realitycheck.audio.LocalSoundManager
+import com.example.realitycheck.audio.SoundManager
 
-class MainActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityMainBinding
-
+class MainActivity : ComponentActivity()
+{
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        setContent {
+            RealityCheckTheme {
 
-        val navView: BottomNavigationView = binding.navView
+                val soundManager = remember {
+                    SoundManager(this)
+                }
 
-        val navController = findNavController(R.id.nav_host_fragment_activity_main)
-        // Passing each menu ID as a set of Ids because each
-        // menu should be considered as top level destinations.
-        val appBarConfiguration = AppBarConfiguration(
-            setOf(
-                R.id.navigation_home, R.id.navigation_dashboard, R.id.navigation_notifications
-            )
-        )
-        setupActionBarWithNavController(navController, appBarConfiguration)
-        navView.setupWithNavController(navController)
+                CompositionLocalProvider(
+                    LocalSoundManager provides soundManager
+                ) {
+
+                    val viewModel: NetworkViewModel = viewModel()
+                    val isOnline by viewModel.isOnline.collectAsState()
+
+                    if (!isOnline) {
+                        NoInternetScreen(
+                            onRetrySuccess = { }
+                        )
+                    } else {
+                        MainNavHost()
+                    }
+                }
+            }
+        }
+    }
+
+    companion object {
+        const val EXTRA_FINAL_STREAK = "extra_final_streak"
     }
 }

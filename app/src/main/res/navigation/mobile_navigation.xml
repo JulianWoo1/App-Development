@@ -1,9 +1,57 @@
 <?xml version="1.0" encoding="utf-8"?>
-<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+
+<navigation
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/mobile_navigation"
-    app:startDestination="@+id/navigation_home">
+    app:startDestination="@id/onboardingStep1Fragment">
+
+    <fragment
+        android:id="@+id/onboardingStep1Fragment"
+        android:name="com.example.realitycheck.ui.guide.OnboardingFragment"
+        android:label="Step 1"
+        tools:layout="@layout/fragment_onboarding">
+
+        <action
+            android:id="@+id/action_step1_to_step2"
+            app:destination="@id/onboardingStep2Fragment"/>
+    </fragment>
+
+    <fragment
+        android:id="@+id/onboardingStep2Fragment"
+        android:name="com.example.realitycheck.ui.guide.OnboardingStep2Fragment"
+        android:label="Step 2"
+        tools:layout="@layout/fragment_onboarding_step2">
+
+        <action
+            android:id="@+id/action_step2_to_step3"
+            app:destination="@id/onboardingStep3Fragment"/>
+    </fragment>
+
+    <fragment
+        android:id="@+id/onboardingStep3Fragment"
+        android:name="com.example.realitycheck.ui.guide.OnboardingStep3Fragment"
+        android:label="Step 3"
+        tools:layout="@layout/fragment_onboarding_step3">
+
+        <action
+            android:id="@+id/action_step3_to_step4"
+            app:destination="@id/onboardingStep4Fragment"/>
+    </fragment>
+
+    <fragment
+        android:id="@+id/onboardingStep4Fragment"
+        android:name="com.example.realitycheck.ui.guide.OnboardingStep4Fragment"
+        android:label="Step 4"
+        tools:layout="@layout/fragment_onboarding_step4">
+
+        <action
+            android:id="@+id/action_step4_to_home"
+            app:destination="@id/navigation_home"
+            app:popUpTo="@id/mobile_navigation"
+            app:popUpToInclusive="true"/>
+    </fragment>
 
     <fragment
         android:id="@+id/navigation_home"
@@ -12,14 +60,32 @@
         tools:layout="@layout/fragment_home" />
 
     <fragment
-        android:id="@+id/navigation_dashboard"
-        android:name="com.example.realitycheck.ui.dashboard.DashboardFragment"
-        android:label="@string/title_dashboard"
-        tools:layout="@layout/fragment_dashboard" />
+        android:id="@+id/navigation_scores"
+        android:name="com.example.realitycheck.ui.scores.ScoresFragment"
+        android:label="Scores"
+        tools:layout="@layout/fragment_scores" />
 
     <fragment
-        android:id="@+id/navigation_notifications"
-        android:name="com.example.realitycheck.ui.notifications.NotificationsFragment"
-        android:label="@string/title_notifications"
-        tools:layout="@layout/fragment_notifications" />
+        android:id="@+id/navigation_badges"
+        android:name="com.example.realitycheck.ui.badges.BadgesFragment"
+        android:label="Badges"
+        tools:layout="@layout/fragment_badges" />
+
+    <fragment
+        android:id="@+id/navigation_profile"
+        android:name="com.example.realitycheck.ui.profile.ProfileFragment"
+        android:label="Profiel"
+        tools:layout="@layout/fragment_profile" />
+
+    <fragment
+        android:id="@+id/noInternetFragment"
+        android:name="com.example.realitycheck.ui.nointernet.NoInternetFragment"
+        android:label="Geen internet"
+        tools:layout="@layout/fragment_no_internet"/>
+
+    <action
+        android:id="@+id/action_global_home"
+        app:destination="@id/navigation_home"
+        app:popUpTo="@id/mobile_navigation"
+        app:popUpToInclusive="true"/>
 </navigation>

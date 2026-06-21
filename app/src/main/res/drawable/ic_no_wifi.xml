@@ -1,0 +1,46 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="96"
+    android:viewportHeight="96">
+
+    <!-- Wifi -->
+    <path
+        android:fillColor="#5B2EFF"
+        android:pathData="M48,70m-5,0a5,5 0,1 1,10 0a5,5 0,1 1,-10 0"/>
+
+    <path
+        android:strokeColor="#5B2EFF"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M36,58c7,-7 17,-7 24,0"/>
+
+    <path
+        android:strokeColor="#5B2EFF"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M26,46c13,-13 31,-13 44,0"/>
+
+    <path
+        android:strokeColor="#5B2EFF"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M16,34c20,-20 44,-20 64,0"/>
+
+    <!-- X -->
+    <path
+        android:strokeColor="#FF4B93"
+        android:strokeWidth="8"
+        android:strokeLineCap="round"
+        android:pathData="M60,56 L78,74"/>
+
+    <path
+        android:strokeColor="#FF4B93"
+        android:strokeWidth="8"
+        android:strokeLineCap="round"
+        android:pathData="M78,56 L60,74"/>
+
+</vector>

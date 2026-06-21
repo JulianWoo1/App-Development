@@ -1,0 +1,475 @@
+package com.example.realitycheck.ui.gameover
+
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.realitycheck.ui.GameResultHolder
+import com.example.realitycheck.ui.badges.BadgeDetailDialog
+import com.example.realitycheck.ui.components.ShareScoreCard
+import androidx.core.content.FileProvider
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
+import android.app.Activity
+import android.content.Context
+import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.view.View
+import android.view.ViewGroup
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
+
+// ===== COLORS =====
+private val Bg         = Color(0xFF050505)
+private val CardBg     = Color(0xFF0D0D0D)
+private val Purple     = Color(0xFF5B2EFF)
+private val Pink       = Color(0xFFFF4D8D)
+private val Orange     = Color(0xFFFF8A3D)
+private val Gray       = Color(0xFFA0A0A0)
+private val Stroke     = Color(0xFF1F1F1F)
+private val ProgressBg = Color(0xFF222222)
+
+/**
+ * End-of-session summary screen.
+ *
+ * @param streak    Final streak (or correct-answer count in speed-run mode).
+ * @param xpGained  Total XP earned during this session.
+ * @param level     Player's current level (after XP has been applied).
+ * @param currentXp XP within the current level.
+ * @param maxXp     XP required to reach the next level.
+ */
+@Composable
+fun GameOverScreen(
+    streak: Int = 0,
+    xpGained: Int = 0,
+    level: Int = 1,
+    currentXp: Int = 0,
+    maxXp: Int = 100,
+    onPlayAgain: () -> Unit,
+    onHome: () -> Unit
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    var badgeIndex by remember { mutableIntStateOf(0) }
+    val badges = GameResultHolder.newlyAwardedBadges
+
+    if (badges.isNotEmpty() && badgeIndex < badges.size) {
+        BadgeDetailDialog(
+            badge = badges[badgeIndex],
+            onDismiss = {
+                badgeIndex++
+                if (badgeIndex >= badges.size) {
+                    GameResultHolder.newlyAwardedBadges = emptyList()
+                }
+            }
+        )
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Bg)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+
+            Spacer(modifier = Modifier.height(22.dp))
+
+            // ===== ICON =====
+            Box(
+                modifier = Modifier
+                    .size(140.dp)
+                    .background(
+                        brush = Brush.radialGradient(
+                            colors = listOf(Color(0xFF42124B), Color(0xFF101010)),
+                            radius = 220f
+                        ),
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(74.dp)
+                        .clip(CircleShape)
+                        .background(Brush.linearGradient(colors = listOf(Pink, Orange))),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "✕",
+                        color = Color.White,
+                        fontSize = 36.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            Text(
+                text = "Game over",
+                fontSize = 36.sp,
+                fontWeight = FontWeight.ExtraBold,
+                textAlign = TextAlign.Center,
+                color = Color.White,
+                modifier = Modifier.padding(top = 10.dp)
+            )
+            Text(
+                text = "Better luck next time!",
+                color = Gray,
+                fontSize = 16.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 6.dp)
+            )
+
+            Spacer(modifier = Modifier.height(22.dp))
+
+            // ===== SCORE CARD =====
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(26.dp),
+                colors = CardDefaults.cardColors(containerColor = CardBg),
+                border = BorderStroke(1.dp, Stroke)
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("Your streak", color = Gray, fontSize = 16.sp)
+
+                    Text(
+                        text = streak.toString(),
+                        color = Color.White,
+                        fontSize = 64.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    // Streak milestone badge — shown when the player did reasonably well
+                    if (streak >= 3) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(50))
+                                .background(
+                                    Brush.horizontalGradient(
+                                        colors = listOf(Color(0xFF4A1DFF), Color(0xFF2E146B))
+                                    )
+                                )
+                        ) {
+                            Text(
+                                text = when {
+                                    streak >= 20 -> "Legendary streak 🏆"
+                                    streak >= 10 -> "Hot streak 🔥"
+                                    else         -> "Nice streak ⚡"
+                                },
+                                color = Color(0xFFBFA6FF),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                modifier = Modifier.padding(horizontal = 18.dp, vertical = 6.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(18.dp))
+                    }
+
+                    // ── Session stat row ─────────────────────────────────────
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(Color(0xFF0A0A0A))
+                            .border(1.dp, Stroke, RoundedCornerShape(20.dp))
+                            .padding(vertical = 16.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        StatItem(
+                            icon  = "🎯",
+                            value = streak.toString(),
+                            label = "Streak"
+                        )
+                        StatItem(
+                            icon  = "⚡",
+                            value = "+$xpGained",
+                            label = "XP earned"
+                        )
+                        StatItem(
+                            icon  = "🏅",
+                            value = "Lv $level",
+                            label = "Level"
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            // ===== XP CARD =====
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = CardBg),
+                border = BorderStroke(1.dp, Stroke)
+            ) {
+                Column(modifier = Modifier.padding(20.dp)) {
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "Level $level",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        )
+                        Text(
+                            text = "+$xpGained XP",
+                            color = Purple,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(8.dp)
+                            .clip(RoundedCornerShape(50))
+                            .background(ProgressBg)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(
+                                    (currentXp.toFloat() / maxXp.toFloat()).coerceIn(0f, 1f)
+                                )
+                                .fillMaxHeight()
+                                .background(
+                                    Brush.horizontalGradient(
+                                        colors = listOf(Purple, Color(0xFF7B61FF))
+                                    )
+                                )
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = "$currentXp / $maxXp XP",
+                        color = Gray,
+                        fontSize = 13.sp
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(22.dp))
+
+            // ===== PLAY AGAIN BUTTON =====
+            Button(
+                onClick = onPlayAgain,
+                colors = ButtonDefaults.buttonColors(containerColor = Purple),
+                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(58.dp),
+                contentPadding = PaddingValues(0.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Text(
+                        text = "Play again",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = Color.White
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = "Retry",
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // ===== SHARE BUTTON =====
+            OutlinedButton(
+                onClick = {
+                    scope.launch {
+                        val bitmap = captureComposableToBitmap(context) {
+                            ShareScoreCard(streak, xpGained, level)
+                        }
+
+                        withContext(Dispatchers.IO) {
+                            File(context.cacheDir, "share_score.png")
+                                .outputStream()
+                                .use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+                        }
+
+                        val uri = FileProvider.getUriForFile(
+                            context,
+                            "${context.packageName}.fileprovider",
+                            File(context.cacheDir, "share_score.png")
+                        )
+                        context.startActivity(
+                            Intent.createChooser(
+                                Intent(Intent.ACTION_SEND).apply {
+                                    type = "image/png"
+                                    putExtra(Intent.EXTRA_STREAM, uri)
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                },
+                                "Share your score"
+                            )
+                        )
+                    }
+                },
+                shape = RoundedCornerShape(24.dp),
+                border = BorderStroke(1.dp, Stroke),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(58.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "Share score",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Icon(
+                        imageVector = Icons.Default.Share,
+                        contentDescription = "Share",
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // ===== HOME BUTTON =====
+            OutlinedButton(
+                onClick = onHome,
+                shape = RoundedCornerShape(24.dp),
+                border = BorderStroke(1.dp, Stroke),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(58.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "Back to home",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Icon(
+                        imageVector = Icons.Default.Home,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+        }
+    }
+}
+
+@Composable
+private fun StatItem(icon: String, value: String, label: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(icon, fontSize = 22.sp)
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = value,
+            color = Color.White,
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(3.dp))
+        Text(label, color = Gray, fontSize = 14.sp)
+    }
+}
+
+private suspend fun captureComposableToBitmap(
+    context: Context,
+    widthDp: Int = 360,
+    content: @Composable () -> Unit
+): Bitmap = withContext(Dispatchers.Main) {
+    val density = context.resources.displayMetrics.density
+    val widthPx = (widthDp * density).toInt()
+
+    val composeView = ComposeView(context).apply {
+        setContent(content)
+        alpha = 0f
+    }
+
+    val rootView = (context as? Activity)
+        ?.findViewById<ViewGroup>(android.R.id.content)
+        ?: error("Cannot find root view")
+
+    rootView.addView(composeView)
+
+    val bitmap = suspendCoroutine<Bitmap> { cont ->
+        composeView.post {
+            composeView.measure(
+                View.MeasureSpec.makeMeasureSpec(widthPx, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.UNSPECIFIED
+            )
+            val heightPx = composeView.measuredHeight.coerceAtLeast(1)
+            composeView.layout(0, 0, widthPx, heightPx)
+
+            val bmp = Bitmap.createBitmap(widthPx, heightPx, Bitmap.Config.ARGB_8888)
+            Canvas(bmp).apply { composeView.draw(this) }
+            rootView.removeView(composeView)
+            cont.resume(bmp)
+        }
+    }
+    bitmap
+}
